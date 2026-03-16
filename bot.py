@@ -1,16 +1,36 @@
+import os
 import telebot
-from telebot import types
+from flask import Flask, request
 
 TOKEN = "8211708885:AAGe2GJOiYBzLrJPTpayrl2DOPXc7Mbw1qs"
-bot = telebot.TeleBot(TOKEN)
 
-CARD_NUMBER = "2200702056542769"
+bot = telebot.TeleBot(TOKEN)
+app = Flask(__name__)
 
 # ---------- /start ----------
 @bot.message_handler(commands=['start'])
 def start(message):
-
     bot.send_message(message.chat.id, "Привет, ищешь кружки 18+ для сочной дрочки?😈")
+
+
+# ---------- Webhook endpoint ----------
+@app.route(f"/{TOKEN}", methods=["POST"])
+def webhook():
+    json_str = request.get_data().decode("utf-8")
+    update = telebot.types.Update.de_json(json_str)
+    bot.process_new_updates([update])
+    return "OK", 200
+
+
+# ---------- Главная страница (обязательно для Render) ----------
+@app.route("/")
+def home():
+    return "Bot is running", 200
+
+
+if __name__ == "__main__":
+    port = int(os.environ.get("PORT", 10000))
+    app.run(host="0.0.0.0", port=port)
 
     markup = types.InlineKeyboardMarkup()
 
