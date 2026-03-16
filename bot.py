@@ -32,7 +32,10 @@ def callback(call):
     # ===== НАВСЕГДА =====
     if call.data == "forever":
 
-        bot.delete_message(call.message.chat.id, call.message.message_id)
+        try:
+    bot.delete_message(call.message.chat.id, call.message.message_id)
+except:
+    pass
 
         text = """Доступ к приватке!😈
 
@@ -63,7 +66,10 @@ def callback(call):
     # ===== МЕСЯЦ =====
     elif call.data == "month":
 
-        bot.delete_message(call.message.chat.id, call.message.message_id)
+        try:
+    bot.delete_message(call.message.chat.id, call.message.message_id)
+except:
+    pass
 
         text = """Доступ к приватке!😈
 
@@ -94,7 +100,10 @@ def callback(call):
     # ===== НАЗАД =====
     elif call.data == "back":
 
-        bot.delete_message(call.message.chat.id, call.message.message_id)
+        try:
+    bot.delete_message(call.message.chat.id, call.message.message_id)
+except:
+    pass
         start(call.message)
 
     # ===== ОПЛАТА 699 =====
@@ -133,7 +142,10 @@ def callback(call):
     # ===== ПОВТОР =====
     elif call.data == "retry":
 
-        bot.delete_message(call.message.chat.id, call.message.message_id)
+        try:
+    bot.delete_message(call.message.chat.id, call.message.message_id)
+except:
+    pass
         send_payment(call.message.chat.id, "повтор")
 
 # ---------- ФУНКЦИЯ ОПЛАТЫ ----------
