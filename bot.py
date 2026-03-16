@@ -32,7 +32,7 @@ def callback(call):
     # ===== НАВСЕГДА =====
     if call.data == "forever":
 
-        try:
+try:
     bot.delete_message(call.message.chat.id, call.message.message_id)
 except:
     pass
@@ -66,7 +66,7 @@ except:
     # ===== МЕСЯЦ =====
     elif call.data == "month":
 
-        try:
+try:
     bot.delete_message(call.message.chat.id, call.message.message_id)
 except:
     pass
@@ -100,7 +100,7 @@ except:
     # ===== НАЗАД =====
     elif call.data == "back":
 
-        try:
+try:
     bot.delete_message(call.message.chat.id, call.message.message_id)
 except:
     pass
@@ -142,7 +142,7 @@ except:
     # ===== ПОВТОР =====
     elif call.data == "retry":
 
-        try:
+try:
     bot.delete_message(call.message.chat.id, call.message.message_id)
 except:
     pass
