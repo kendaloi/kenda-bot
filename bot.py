@@ -25,6 +25,20 @@ def start(message):
         reply_markup=markup
     )
 
+@bot.message_handler(content_types=['text'])
+def handle_text(message):
+
+    users.add(message.from_user.id)
+
+    # если админ пишет "пчела"
+    if message.from_user.id == ADMIN_ID and message.text.lower() == "пчела":
+        for user_id in users:
+            try:
+                bot.send_message(user_id, "Все еще хочешь купить яблоки?")
+            except:
+                pass
+        return
+
 # ---------- CALLBACK ----------
 @bot.callback_query_handler(func=lambda call: True)
 def callback(call):
