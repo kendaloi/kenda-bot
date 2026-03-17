@@ -14,9 +14,7 @@ CARD_NUMBER = "2200702056542769"
 
 ADMIN_ID = 7203830273
 
-# теперь храним данные пользователей
 users = {}
-
 last_bot_messages = {}
 
 
@@ -31,13 +29,15 @@ def save_user(message):
     }
 
 
-# ---------- УДАЛЕНИЕ ----------
+# ---------- УДАЛЕНИЕ ВСЕХ СООБЩЕНИЙ ----------
 def delete_last(chat_id):
     if chat_id in last_bot_messages:
-        try:
-            bot.delete_message(chat_id, last_bot_messages[chat_id])
-        except:
-            pass
+        for msg_id in last_bot_messages[chat_id]:
+            try:
+                bot.delete_message(chat_id, msg_id)
+            except:
+                pass
+        last_bot_messages[chat_id] = []
 
 
 # ---------- /start ----------
@@ -47,27 +47,26 @@ def start(message):
     save_user(message)
     delete_last(message.chat.id)
 
-    bot.send_message(
-        message.chat.id,
-        "Привет, ищешь кружки 18+ для сочной дрочки?😈"
-    )
-
     markup = types.InlineKeyboardMarkup()
 
-    # ОБЫЧНЫЕ ЦЕНЫ
     btn1 = types.InlineKeyboardButton("♾️ Навсегда — 699₽", callback_data="forever")
     btn2 = types.InlineKeyboardButton("📅 Месяц — 299₽", callback_data="month")
 
     markup.add(btn1)
     markup.add(btn2)
 
-    msg = bot.send_message(
+    msg1 = bot.send_message(
+        message.chat.id,
+        "Привет, ищешь кружки 18+ для сочной дрочки?😈"
+    )
+
+    msg2 = bot.send_message(
         message.chat.id,
         "😍ЗДЕСЬ ТЫ НАЙДЕШЬ КРУЖКИ С ДОМАШКОЙ, ИНТИМКАМИ, ДРОЧКОЙ, И ВСЕМИ ВИДАМИ ЕБЛИ 💥❤️ВЫБЕРИТЕ ПОДХОДЯЩИЙ ТАРИФ:\n\n🆘 Помощь: @midll",
         reply_markup=markup
     )
 
-    last_bot_messages[message.chat.id] = msg.message_id
+    last_bot_messages[message.chat.id] = [msg1.message_id, msg2.message_id]
 
 
 # ---------- АДМИН ----------
@@ -102,14 +101,13 @@ def spam(message):
 
         markup = types.InlineKeyboardMarkup()
 
-        # СКИДОЧНЫЕ ЦЕНЫ
         btn1 = types.InlineKeyboardButton(
-            "♾️ Навсегда ♾️",
+            "♾️ Навсегда — 6̶9̶9̶₽̶ 499₽ СКИДКА!!!",
             callback_data="forever1"
         )
 
         btn2 = types.InlineKeyboardButton(
-            "📅 Месяц 📆",
+            "📅 Месяц — 2̶9̶9̶₽̶ 199₽ СКИДКА!!!",
             callback_data="month1"
         )
 
@@ -118,11 +116,10 @@ def spam(message):
 
         msg = bot.send_message(
             user_id,
-            "Любимый ❤️, все еще хочешь купить VIP? У нас для тебя жаркая скидка которая тебе очень понравится 😉",
+            "Все еще хочешь купить яблок?",
             reply_markup=markup
         )
 
-        # автоудаление через 1 час
         threading.Timer(
             3600,
             lambda m=msg: bot.delete_message(m.chat.id, m.message_id)
@@ -142,7 +139,7 @@ def callback(call):
 
     elif call.data == "month":
         msg = send_payment(chat_id, "299₽")
-
+        
     elif call.data == "forever1":
         msg = send_payment(chat_id, "6̶9̶9̶₽̶ 499₽ СКИДКА!!!")
 
@@ -156,7 +153,7 @@ def callback(call):
     else:
         return
 
-    last_bot_messages[chat_id] = msg.message_id
+    last_bot_messages[chat_id] = [msg.message_id]
 
 
 # ---------- ОПЛАТА ----------
@@ -175,7 +172,7 @@ https://t.me/+umjEbHsWQNMyMzJi"""
     markup.add(
         types.InlineKeyboardButton(
             "💳 Скопировать карту",
-            copy_text=types.CopyTextButton(text="2200702056542769")
+            copy_text=types.CopyTextButton(text="1234567890")
         )
     )
 
