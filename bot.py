@@ -17,6 +17,7 @@ ADMIN_ID = 7203830273
 
 users = {}
 last_bot_messages = {}
+user_tariff = {}  # <-- запоминаем тариф
 
 
 # ---------- СОХРАНЕНИЕ ПОЛЬЗОВАТЕЛЯ ----------
@@ -50,8 +51,8 @@ def start(message):
 
     markup = types.InlineKeyboardMarkup()
 
-    btn1 = types.InlineKeyboardButton("♾️ Навсегда — 699₽", callback_data="forever")
-    btn2 = types.InlineKeyboardButton("📅 Месяц — 299₽", callback_data="month")
+    btn1 = types.InlineKeyboardButton("♾️ Навсегда — 699₽", callback_data="forever_699")
+    btn2 = types.InlineKeyboardButton("📅 Месяц — 299₽", callback_data="month_299")
 
     markup.add(btn1)
     markup.add(btn2)
@@ -104,12 +105,12 @@ def spam(message):
 
         btn1 = types.InlineKeyboardButton(
             "♾️ Навсегда — 6̶9̶9̶₽̶ 499₽ СКИДКА!!!",
-            callback_data="forever1"
+            callback_data="forever_499"
         )
 
         btn2 = types.InlineKeyboardButton(
             "📅 Месяц — 2̶9̶9̶₽̶ 199₽ СКИДКА!!!",
-            callback_data="month1"
+            callback_data="month_199"
         )
 
         markup.add(btn1)
@@ -117,10 +118,7 @@ def spam(message):
 
         msg = bot.send_message(
             user_id,
-            """❤️ Любимый, хочешь посмотреть на меня?
-
-            🔞 Купи приветик и узнай что...
-            🏷️ У нас есть горячая скидочка для тебя 30%!!!""",
+            "Все еще хочешь купить яблок?",
             reply_markup=markup
         )
 
@@ -138,29 +136,30 @@ def callback(call):
 
     delete_last(chat_id)
 
-    if call.data == "forever":
-        msg = send_payment(chat_id, "699₽")
+    # ===== ВЫБОР ТАРИФА =====
+    if call.data.startswith("forever"):
+        price = call.data.split("_")[1] + "₽"
+        user_tariff[chat_id] = price
+        msg = send_payment(chat_id, price)
 
-    elif call.data == "month":
-        msg = send_payment(chat_id, "299₽")
-
-    elif call.data == "forever1":
-        msg = send_payment(chat_id, "6̶9̶9̶₽̶ 499₽ СКИДКА!!!")
-
-    elif call.data == "month1":
-        msg = send_payment(chat_id, "2̶9̶9̶₽̶ 199₽ СКИДКА!!!")
-
-    elif call.data == "back":
-        start(call.message)
-        return
+    elif call.data.startswith("month"):
+        price = call.data.split("_")[1] + "₽"
+        user_tariff[chat_id] = price
+        msg = send_payment(chat_id, price)
 
     elif call.data == "retry":
-        msg = send_payment(chat_id, "699₽")
+        price = user_tariff.get(chat_id, "699₽")
+        msg = send_payment(chat_id, price)
 
     elif call.data == "cancel":
         start(call.message)
         return
 
+    elif call.data == "back":
+        start(call.message)
+        return
+
+    # ===== Я ОПЛАТИЛ =====
     elif call.data == "paid":
 
         clocks = ["🕛","🕐","🕑","🕒","🕓","🕔","🕕","🕖","🕗","🕘","🕙","🕚"]
