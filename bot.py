@@ -104,13 +104,13 @@ def spam(message):
 
         # СКИДОЧНЫЕ ЦЕНЫ
         btn1 = types.InlineKeyboardButton(
-            "♾️ Навсегда — 6̶9̶9̶₽̶ 499₽ СКИДКА!!!",
-            callback_data="forever"
+            "♾️ Навсегда ♾️",
+            callback_data="forever1"
         )
 
         btn2 = types.InlineKeyboardButton(
-            "📅 Месяц — 2̶9̶9̶₽̶ 199₽ СКИДКА!!!",
-            callback_data="month"
+            "📅 Месяц 📆",
+            callback_data="month1"
         )
 
         markup.add(btn1)
@@ -142,6 +142,12 @@ def callback(call):
 
     elif call.data == "month":
         msg = send_payment(chat_id, "299₽")
+
+    elif call.data == "forever1":
+        msg = send_payment(chat_id, "6̶9̶9̶₽̶ 499₽ СКИДКА!!!")
+
+    elif call.data == "month1":
+        msg = send_payment(chat_id, "2̶9̶9̶₽̶ 199₽ СКИДКА!!!")
 
     elif call.data == "back":
         start(call.message)
