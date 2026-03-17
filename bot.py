@@ -95,7 +95,7 @@ def home():
 if __name__ == "__main__":
 
     bot.remove_webhook()
-    bot.set_webhook(url=f"https://kenda-bot.onrender.com/{8211708885:AAGe2GJOiYBzLrJPTpayrl2DOPXc7Mbw1qs}")
+    bot.set_webhook(url=f"https://kenda-bot.onrender.com/{TOKEN}")
 
     port = int(os.environ.get("PORT", 10000))
     app.run(host="0.0.0.0", port=port)
