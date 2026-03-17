@@ -104,13 +104,13 @@ def spam(message):
         markup = types.InlineKeyboardMarkup()
 
         btn1 = types.InlineKeyboardButton(
-            "♾️ Навсегда — 6̶9̶9̶₽̶ 499₽ СКИДКА!!!",
-            callback_data="forever_499"
+            "♾️ Навсегда ♾️ СКИДКА!!!",
+            callback_data="forever_6̶9̶9̶₽̶ 499₽"
         )
 
         btn2 = types.InlineKeyboardButton(
-            "📅 Месяц — 2̶9̶9̶₽̶ 199₽ СКИДКА!!!",
-            callback_data="month_199"
+            "📅 Месяц 📅 СКИДКА!!!",
+            callback_data="month_2̶9̶9̶₽̶ 199₽"
         )
 
         markup.add(btn1)
