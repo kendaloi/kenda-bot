@@ -46,13 +46,23 @@ def start(message):
 @bot.callback_query_handler(func=lambda call: True)
 def callback(call):
 
-    if call.data == "copy":
+    # ===== ТАРИФ НАВСЕГДА =====
+    if call.data == "forever":
+        send_payment(call.message.chat.id, "699.00₽")
+
+    # ===== ТАРИФ НА МЕСЯЦ =====
+    elif call.data == "month":
+        send_payment(call.message.chat.id, "299.00₽")
+
+    # ===== СКОПИРОВАТЬ КАРТУ =====
+    elif call.data == "copy":
         bot.answer_callback_query(
             call.id,
             text=CARD_NUMBER,
             show_alert=True
         )
 
+    # ===== НАЗАД =====
     elif call.data == "back":
         start(call.message)
 
