@@ -3,6 +3,7 @@ import os
 import telebot
 from telebot import types
 from flask import Flask, request
+import threading
 
 TOKEN = "8211708885:AAGe2GJOiYBzLrJPTpayrl2DOPXc7Mbw1qs"
 
@@ -12,17 +13,39 @@ app = Flask(__name__)
 CARD_NUMBER = "2200702056542769"
 
 ADMIN_ID = 7203830273
-users = set()
 
-# хранение последнего сообщения бота
+# теперь храним данные пользователей
+users = {}
+
 last_bot_messages = {}
+
+
+# ---------- СОХРАНЕНИЕ ПОЛЬЗОВАТЕЛЯ ----------
+def save_user(message):
+    if message.from_user.id == ADMIN_ID or message.from_user.is_bot:
+        return
+
+    users[message.from_user.id] = {
+        "username": message.from_user.username,
+        "name": message.from_user.first_name
+    }
+
+
+# ---------- УДАЛЕНИЕ ----------
+def delete_last(chat_id):
+    if chat_id in last_bot_messages:
+        try:
+            bot.delete_message(chat_id, last_bot_messages[chat_id])
+        except:
+            pass
 
 
 # ---------- /start ----------
 @bot.message_handler(commands=['start'])
 def start(message):
 
-    users.add(message.from_user.id)
+    save_user(message)
+    delete_last(message.chat.id)
 
     bot.send_message(
         message.chat.id,
@@ -31,45 +54,44 @@ def start(message):
 
     markup = types.InlineKeyboardMarkup()
 
-    btn1 = types.InlineKeyboardButton("♾️ ДОСТУП НАВСЕГДА ♾️", callback_data="forever")
-    btn2 = types.InlineKeyboardButton("📅 ДОСТУП НА МЕСЯЦ 📅", callback_data="month")
+    # ОБЫЧНЫЕ ЦЕНЫ
+    btn1 = types.InlineKeyboardButton("♾️ Навсегда — 699₽", callback_data="forever")
+    btn2 = types.InlineKeyboardButton("📅 Месяц — 299₽", callback_data="month")
 
     markup.add(btn1)
     markup.add(btn2)
 
-    bot.send_message(
+    msg = bot.send_message(
         message.chat.id,
         "😍ЗДЕСЬ ТЫ НАЙДЕШЬ КРУЖКИ С ДОМАШКОЙ, ИНТИМКАМИ, ДРОЧКОЙ, И ВСЕМИ ВИДАМИ ЕБЛИ 💥❤️ВЫБЕРИТЕ ПОДХОДЯЩИЙ ТАРИФ:\n\n🆘 Помощь: @midll",
         reply_markup=markup
     )
 
+    last_bot_messages[message.chat.id] = msg.message_id
 
-# ---------- АДМИН ПАНЕЛЬ ----------
+
+# ---------- АДМИН ----------
 @bot.message_handler(commands=['admin'])
 def admin_panel(message):
 
     if message.from_user.id != ADMIN_ID:
         return
 
-    text = "👤 Пользователи бота:\n\n"
+    text = f"👤 Пользователи бота: {len(users)}\n\n"
 
-    for user_id in users:
-        try:
-            user = bot.get_chat(user_id)
-            username = user.username
-            first_name = user.first_name
+    for user_id, data in users.items():
 
-            text += f"Имя: {first_name}\n"
-            text += f"Username: @{username if username else 'нет'}\n"
-            text += f"ID: {user_id}\n\n"
+        username = data["username"]
+        name = data["name"]
 
-        except:
-            text += f"ID: {user_id}\n\n"
+        text += f"Имя: {name}\n"
+        text += f"Username: @{username if username else 'нет'}\n"
+        text += f"ID: {user_id}\n\n"
 
     bot.send_message(message.chat.id, text)
 
 
-# ---------- СПАМ ----------
+# ---------- SPAM ----------
 @bot.message_handler(commands=['spam'])
 def spam(message):
 
@@ -77,11 +99,34 @@ def spam(message):
         return
 
     for user_id in users:
-        if user_id != ADMIN_ID:
-            try:
-                bot.send_message(user_id, "Все еще хочешь купить яблоки?")
-            except:
-                pass
+
+        markup = types.InlineKeyboardMarkup()
+
+        # СКИДОЧНЫЕ ЦЕНЫ
+        btn1 = types.InlineKeyboardButton(
+            "♾️ Навсегда — 6̶9̶9̶₽̶ 499₽ СКИДКА!!!",
+            callback_data="forever"
+        )
+
+        btn2 = types.InlineKeyboardButton(
+            "📅 Месяц — 2̶9̶9̶₽̶ 199₽ СКИДКА!!!",
+            callback_data="month"
+        )
+
+        markup.add(btn1)
+        markup.add(btn2)
+
+        msg = bot.send_message(
+            user_id,
+            "Любимый ❤️, все еще хочешь купить VIP? У нас для тебя жаркая скидка которая тебе очень понравится 😉",
+            reply_markup=markup
+        )
+
+        # автоудаление через 1 час
+        threading.Timer(
+            3600,
+            lambda m=msg: bot.delete_message(m.chat.id, m.message_id)
+        ).start()
 
 
 # ---------- CALLBACK ----------
@@ -90,18 +135,13 @@ def callback(call):
 
     chat_id = call.message.chat.id
 
-    # удалить прошлое сообщение бота
-    if chat_id in last_bot_messages:
-        try:
-            bot.delete_message(chat_id, last_bot_messages[chat_id])
-        except:
-            pass
+    delete_last(chat_id)
 
     if call.data == "forever":
-        msg = send_payment(chat_id, "699.00₽")
+        msg = send_payment(chat_id, "699₽")
 
     elif call.data == "month":
-        msg = send_payment(chat_id, "299.00₽")
+        msg = send_payment(chat_id, "299₽")
 
     elif call.data == "back":
         start(call.message)
@@ -126,7 +166,6 @@ https://t.me/+umjEbHsWQNMyMzJi"""
 
     markup = types.InlineKeyboardMarkup()
 
-    # копирование в буфер обмена
     markup.add(
         types.InlineKeyboardButton(
             "💳 Скопировать карту",
