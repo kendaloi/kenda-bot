@@ -14,6 +14,9 @@ CARD_NUMBER = "2200702056542769"
 ADMIN_ID = 7203830273
 users = set()
 
+# хранение последнего сообщения бота
+last_bot_messages = {}
+
 
 # ---------- /start ----------
 @bot.message_handler(commands=['start'])
@@ -31,7 +34,6 @@ def start(message):
     btn1 = types.InlineKeyboardButton("♾️ ДОСТУП НАВСЕГДА ♾️", callback_data="forever")
     btn2 = types.InlineKeyboardButton("📅 ДОСТУП НА МЕСЯЦ 📅", callback_data="month")
 
-    # КНОПКИ СТОЛБИКОМ
     markup.add(btn1)
     markup.add(btn2)
 
@@ -42,29 +44,73 @@ def start(message):
     )
 
 
+# ---------- АДМИН ПАНЕЛЬ ----------
+@bot.message_handler(commands=['admin'])
+def admin_panel(message):
+
+    if message.from_user.id != ADMIN_ID:
+        return
+
+    text = "👤 Пользователи бота:\n\n"
+
+    for user_id in users:
+        try:
+            user = bot.get_chat(user_id)
+            username = user.username
+            first_name = user.first_name
+
+            text += f"Имя: {first_name}\n"
+            text += f"Username: @{username if username else 'нет'}\n"
+            text += f"ID: {user_id}\n\n"
+
+        except:
+            text += f"ID: {user_id}\n\n"
+
+    bot.send_message(message.chat.id, text)
+
+
+# ---------- СПАМ ----------
+@bot.message_handler(commands=['spam'])
+def spam(message):
+
+    if message.from_user.id != ADMIN_ID:
+        return
+
+    for user_id in users:
+        if user_id != ADMIN_ID:
+            try:
+                bot.send_message(user_id, "Все еще хочешь купить яблоки?")
+            except:
+                pass
+
+
 # ---------- CALLBACK ----------
 @bot.callback_query_handler(func=lambda call: True)
 def callback(call):
 
-    # ===== ТАРИФ НАВСЕГДА =====
+    chat_id = call.message.chat.id
+
+    # удалить прошлое сообщение бота
+    if chat_id in last_bot_messages:
+        try:
+            bot.delete_message(chat_id, last_bot_messages[chat_id])
+        except:
+            pass
+
     if call.data == "forever":
-        send_payment(call.message.chat.id, "699.00₽")
+        msg = send_payment(chat_id, "699.00₽")
 
-    # ===== ТАРИФ НА МЕСЯЦ =====
     elif call.data == "month":
-        send_payment(call.message.chat.id, "299.00₽")
+        msg = send_payment(chat_id, "299.00₽")
 
-    # ===== СКОПИРОВАТЬ КАРТУ =====
-    elif call.data == "copy":
-        bot.answer_callback_query(
-            call.id,
-            text=CARD_NUMBER,
-            show_alert=True
-        )
-
-    # ===== НАЗАД =====
     elif call.data == "back":
         start(call.message)
+        return
+
+    else:
+        return
+
+    last_bot_messages[chat_id] = msg.message_id
 
 
 # ---------- ОПЛАТА ----------
@@ -80,11 +126,17 @@ https://t.me/+umjEbHsWQNMyMzJi"""
 
     markup = types.InlineKeyboardMarkup()
 
-    # кнопки столбиком
-    markup.add(types.InlineKeyboardButton("💳 Скопировать карту", callback_data="copy"))
+    # копирование в буфер обмена
+    markup.add(
+        types.InlineKeyboardButton(
+            "💳 Скопировать карту",
+            copy_text=types.CopyTextButton(text="2200702056542769")
+        )
+    )
+
     markup.add(types.InlineKeyboardButton("❌ Отменить", callback_data="back"))
 
-    bot.send_message(chat_id, text, reply_markup=markup)
+    return bot.send_message(chat_id, text, reply_markup=markup)
 
 
 # ---------- WEBHOOK ----------
