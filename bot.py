@@ -51,8 +51,8 @@ def start(message):
 
     markup = types.InlineKeyboardMarkup()
 
-    btn1 = types.InlineKeyboardButton("♾️ Навсегда — 699₽", callback_data="forever_699")
-    btn2 = types.InlineKeyboardButton("📅 Месяц — 299₽", callback_data="month_299")
+    btn1 = types.InlineKeyboardButton("♾️ Навсегда ♾️", callback_data="forever_699")
+    btn2 = types.InlineKeyboardButton("📅 Месяц 📆", callback_data="month_299")
 
     markup.add(btn1)
     markup.add(btn2)
@@ -105,12 +105,12 @@ def spam(message):
 
         btn1 = types.InlineKeyboardButton(
             "♾️ Навсегда ♾️ СКИДКА!!!",
-            callback_data="forever_6̶9̶9̶₽̶ 499₽"
+            callback_data="forever_6̶9̶9̶₽̶ 499"
         )
 
         btn2 = types.InlineKeyboardButton(
             "📅 Месяц 📅 СКИДКА!!!",
-            callback_data="month_2̶9̶9̶₽̶ 199₽"
+            callback_data="month_2̶9̶9̶₽̶ 199"
         )
 
         markup.add(btn1)
@@ -118,7 +118,13 @@ def spam(message):
 
         msg = bot.send_message(
             user_id,
-            "Все еще хочешь купить яблок?",
+            """Привет любимый 💋
+            
+            😒 Все еще смотришь обычно porно? Это все очень скучно...
+            😁 У меня есть для тебя предложение в виде скидки 30% на все тарифы!!!
+            
+            🎁 Можешь купить прям сейчас, а иначе через час удалю сообщение!
+            ⬇️⬇️⬇️⬇️⬇️""",
             reply_markup=markup
         )
 
