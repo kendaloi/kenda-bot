@@ -25,7 +25,8 @@ def start(message):
     btn1 = types.InlineKeyboardButton("♾️ ДОСТУП НАВСЕГДА ♾️", callback_data="forever")
     btn2 = types.InlineKeyboardButton("📅 ДОСТУП НА МЕСЯЦ 📅", callback_data="month")
 
-    markup.add(btn1, btn2)
+    markup.add(btn1)
+    markup.add(btn2)
 
     bot.send_message(
         message.chat.id,
@@ -164,20 +165,15 @@ def send_payment(chat_id, price):
 
 🏦 Карта: {CARD_NUMBER}
 
-⭐ ️оплатить звёздами"""
+⭐ Оплатить звёздами:
+https://t.me/+umjEbHsWQNMyMzJi"""
 
     markup = types.InlineKeyboardMarkup()
-
-    stars = types.InlineKeyboardButton(
-        "⭐ оплатить звёздами",
-        url="https://t.me/+umjEbHsWQNMyMzJi"
-    )
 
     copy = types.InlineKeyboardButton("💳 Скопировать карту", callback_data="copy")
     paid = types.InlineKeyboardButton("✅ Я ОПЛАТИЛ", callback_data="paid")
     cancel = types.InlineKeyboardButton("❌ Отменить", callback_data="back")
 
-    markup.add(stars)
     markup.add(copy)
     markup.add(paid)
     markup.add(cancel)
