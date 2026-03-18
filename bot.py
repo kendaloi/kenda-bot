@@ -19,7 +19,7 @@ blocked_users = set()
 last_bot_messages = {}
 user_tariff = {}
 
-# ---------- ЗАГРУЗКА ----------
+# ---------- ЗАГРУЗКА ПОЛЬЗОВАТЕЛЕЙ ----------
 def load_users():
     global users, blocked_users
     try:
@@ -49,7 +49,7 @@ def save_user(message):
     }
     save_all()
 
-# ---------- УДАЛЕНИЕ ----------
+# ---------- УДАЛЕНИЕ СООБЩЕНИЙ ----------
 def delete_last(chat_id):
     if chat_id in last_bot_messages:
         for msg_id in last_bot_messages[chat_id]:
@@ -78,40 +78,37 @@ def start(message):
     )
     last_bot_messages[message.chat.id] = [msg1.message_id, msg2.message_id]
 
-# ---------- АДМИН ----------
+# ---------- /admin ----------
 @bot.message_handler(commands=['admin'])
 def admin_panel(message):
     if message.from_user.id != ADMIN_ID:
         return
-
     active_users = [u for u in users if u not in blocked_users]
     text = f"👤 Пользователи бота: {len(active_users)}\n\n"
-
     for user_id in active_users:
         data = users[user_id]
         username = data["username"]
         name = data["name"]
         text += f"Имя: {name}\nUsername: @{username if username else 'нет'}\nID: {user_id}\n\n"
-
     bot.send_message(message.chat.id, text)
 
-# ---------- СПАМ (текст, фото, видео) ----------
+# ---------- /spam (текст, фото, видео) ----------
 @bot.message_handler(content_types=['text', 'photo', 'video'])
 def spam(message):
     if message.from_user.id != ADMIN_ID:
         return
 
     text = ""
-    if message.content_type == 'text':
-        if message.text.startswith("/spam"):
-            text = message.text.replace("/spam", "").strip()
-        else:
-            return
-    elif message.content_type in ['photo', 'video']:
-        if message.caption and message.caption.startswith("/spam"):
-            text = message.caption.replace("/spam", "").strip()
-        else:
-            return
+    content_type = message.content_type
+
+    # текстовая команда
+    if content_type == 'text' and message.text.startswith("/spam"):
+        text = message.text.replace("/spam", "").strip()
+    # фото или видео с подписью /spam
+    elif content_type in ['photo', 'video'] and message.caption and message.caption.startswith("/spam"):
+        text = message.caption.replace("/spam", "").strip()
+    else:
+        return  # не команда, выходим
 
     # кнопки
     markup = types.InlineKeyboardMarkup()
@@ -119,22 +116,23 @@ def spam(message):
     btn2 = types.InlineKeyboardButton("📅 Месяц 📅 СКИДКА!!!", callback_data="month_2̶9̶9̶₽̶ 199")
     markup.add(btn1, btn2)
 
-    for user_id in list(users.keys()):
-        if user_id in blocked_users or int(user_id) == ADMIN_ID:
+    # отправка всем пользователям
+    for user_id_str in list(users.keys()):
+        if int(user_id_str) == ADMIN_ID or user_id_str in blocked_users:
             continue
 
         try:
-            if message.content_type == 'text':
-                msg = bot.send_message(int(user_id), text, reply_markup=markup)
-            elif message.content_type == 'photo':
-                msg = bot.send_photo(int(user_id), message.photo[-1].file_id, caption=text, reply_markup=markup)
-            elif message.content_type == 'video':
-                msg = bot.send_video(int(user_id), message.video.file_id, caption=text, reply_markup=markup)
+            if content_type == 'text':
+                msg = bot.send_message(int(user_id_str), text, reply_markup=markup)
+            elif content_type == 'photo':
+                msg = bot.send_photo(int(user_id_str), message.photo[-1].file_id, caption=text, reply_markup=markup)
+            elif content_type == 'video':
+                msg = bot.send_video(int(user_id_str), message.video.file_id, caption=text, reply_markup=markup)
 
             threading.Timer(1800, lambda m=msg: bot.delete_message(m.chat.id, m.message_id)).start()
 
         except:
-            blocked_users.add(user_id)
+            blocked_users.add(user_id_str)
             save_all()
 
 # ---------- CALLBACK ----------
@@ -147,35 +145,28 @@ def callback(call):
         price = call.data.split("_")[1] + "₽"
         user_tariff[chat_id] = price
         msg = send_payment(chat_id, price)
-
     elif call.data.startswith("month"):
         price = call.data.split("_")[1] + "₽"
         user_tariff[chat_id] = price
         msg = send_payment(chat_id, price)
-
     elif call.data == "retry":
         price = user_tariff.get(chat_id, "699₽")
         msg = send_payment(chat_id, price)
-
     elif call.data == "cancel":
         start(call.message)
         return
-
     elif call.data == "back":
         start(call.message)
         return
-
     elif call.data == "paid":
         clocks = ["🕛","🕐","🕑","🕒","🕓","🕔","🕕","🕖","🕗","🕘","🕙","🕚"]
         msg_anim = bot.send_message(chat_id, "🕛 Проверка платежа...")
-
         for i in range(33):
             try:
                 bot.edit_message_text(f"{clocks[i % len(clocks)]} Проверка платежа...", chat_id, msg_anim.message_id)
                 time.sleep(0.3)
             except:
                 pass
-
         try:
             bot.delete_message(chat_id, msg_anim.message_id)
         except:
@@ -192,7 +183,6 @@ def callback(call):
         )
     else:
         return
-
     last_bot_messages[chat_id] = [msg.message_id]
 
 # ---------- ОПЛАТА ----------
