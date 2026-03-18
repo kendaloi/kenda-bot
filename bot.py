@@ -32,13 +32,6 @@ def save_user(message):
     }
 
 
-# ---------- ПОЛУЧЕНИЕ VIDEO_ID ----------
-@bot.message_handler(content_types=['video'])
-def get_video_id(message):
-    if message.from_user.id == ADMIN_ID:
-        print("VIDEO ID:", message.video.file_id)
-
-
 # ---------- УДАЛЕНИЕ ----------
 def delete_last(chat_id):
     if chat_id in last_bot_messages:
@@ -104,99 +97,65 @@ def admin_panel(message):
     bot.send_message(message.chat.id, text)
 
 
-# ---------- SPAM ----------
-@bot.message_handler(commands=['spam'])
+# ---------- SPAM (НОВЫЙ) ----------
+@bot.message_handler(commands=['spam'], content_types=['text', 'photo', 'video'])
 def spam(message):
 
     if message.from_user.id != ADMIN_ID:
         return
 
+    # текст
+    text = message.text.replace("/spam", "").strip() if message.text else ""
+
+    # кнопки
+    markup = types.InlineKeyboardMarkup()
+
+    btn1 = types.InlineKeyboardButton(
+        "♾️ Навсегда ♾️ СКИДКА!!!",
+        callback_data="forever_6̶9̶9̶₽̶ 499"
+    )
+
+    btn2 = types.InlineKeyboardButton(
+        "📅 Месяц 📅 СКИДКА!!!",
+        callback_data="month_2̶9̶9̶₽̶ 199"
+    )
+
+    markup.add(btn1)
+    markup.add(btn2)
+
     for user_id in list(users.keys()):
 
-        if user_id in blocked_users:
+        if user_id in blocked_users or user_id == ADMIN_ID:
             continue
 
-        markup = types.InlineKeyboardMarkup()
-
-        btn1 = types.InlineKeyboardButton(
-            "♾️ Навсегда ♾️ СКИДКА!!!",
-            callback_data="forever_6̶9̶9̶₽̶ 499"
-        )
-
-        btn2 = types.InlineKeyboardButton(
-            "📅 Месяц 📅 СКИДКА!!!",
-            callback_data="month_2̶9̶9̶₽̶ 199"
-        )
-
-        markup.add(btn1)
-        markup.add(btn2)
-
         try:
-            msg = bot.send_message(
-                user_id,
-                """Привет любимый 💋
+            # ---- ТЕКСТ ----
+            if message.content_type == 'text':
+                msg = bot.send_message(user_id, text, reply_markup=markup)
 
-😒 Все еще смотришь обычное porно? Это все очень скучно...
-🥴 Не хочешь посмотреть на то как я присылаю кружок где стону тебе.?) 
-😁 У меня есть для тебя предложение в виде скидки 30% на все тарифы!!!
-            
-🎁 Можешь купить прям сейчас, а иначе через час удалю сообщение!
-⬇️⬇️⬇️⬇️⬇️⬇️⬇️⬇️⬇️""",
-                reply_markup=markup
-            )
+            # ---- ФОТО ----
+            elif message.content_type == 'photo':
+                msg = bot.send_photo(
+                    user_id,
+                    message.photo[-1].file_id,
+                    caption=text,
+                    reply_markup=markup
+                )
 
+            # ---- ВИДЕО ----
+            elif message.content_type == 'video':
+                msg = bot.send_video(
+                    user_id,
+                    message.video.file_id,
+                    caption=text,
+                    reply_markup=markup
+                )
+
+            # удаление через 30 минут
             threading.Timer(
-                3600,
+                1800,
                 lambda m=msg: bot.delete_message(m.chat.id, m.message_id)
             ).start()
-
-        except:
-            blocked_users.add(user_id)
-
-
-# ---------- SPAM С ВИДЕО ----------
-@bot.message_handler(commands=['spam1'])
-def spam_video(message):
-
-    if message.from_user.id != ADMIN_ID:
-        return
-
-    video_file_id = "ВСТАВЬ_СЮДА_VIDEO_ID"  # <-- ВСТАВЬ СЮДА
-
-    for user_id in list(users.keys()):
-
-        if user_id in blocked_users:
-            continue
-
-        markup = types.InlineKeyboardMarkup()
-
-        btn1 = types.InlineKeyboardButton(
-            "♾️ Навсегда ♾️ СКИДКА!!!",
-            callback_data="forever_6̶9̶9̶₽̶ 499"
-        )
-
-        btn2 = types.InlineKeyboardButton(
-            "📅 Месяц 📅 СКИДКА!!!",
-            callback_data="month_2̶9̶9̶₽̶ 199"
-        )
-
-        markup.add(btn1)
-        markup.add(btn2)
-
-        try:
-            bot.send_video(
-                user_id,
-                video_file_id,
-                caption="""Привет любимый 💋
-
-😒 Все еще смотришь обычное porно? Это все очень скучно...
-🥴 Не хочешь посмотреть на то как я присылаю кружок где стону тебе.?) 
-😁 У меня есть для тебя предложение в виде скидки 30% на все тарифы!!!
-            
-🎁 Можешь купить прям сейчас, а иначе через час удалю сообщение!
-⬇️⬇️⬇️⬇️⬇️⬇️⬇️⬇️⬇️""",
-                reply_markup=markup
-            )
 
         except:
             blocked_users.add(user_id)
