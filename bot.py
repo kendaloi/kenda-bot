@@ -8,19 +8,16 @@ import time
 import json
 
 TOKEN = "8611580639:AAF18VM0OFmHmeumwI4L96_mdVCv1okAkCw"
-
 bot = telebot.TeleBot(TOKEN)
 app = Flask(__name__)
 
 CARD_NUMBER = "2200702056542769"
-
 ADMIN_ID = 7203830273
 
 users = {}
 blocked_users = set()
 last_bot_messages = {}
 user_tariff = {}
-
 
 # ---------- ЗАГРУЗКА ----------
 def load_users():
@@ -34,7 +31,6 @@ def load_users():
         users = {}
         blocked_users = set()
 
-
 # ---------- СОХРАНЕНИЕ ----------
 def save_all():
     with open("users.json", "w") as f:
@@ -43,19 +39,15 @@ def save_all():
             "blocked": list(blocked_users)
         }, f)
 
-
 # ---------- СОХРАНЕНИЕ ПОЛЬЗОВАТЕЛЯ ----------
 def save_user(message):
     if message.from_user.id == ADMIN_ID or message.from_user.is_bot:
         return
-
     users[str(message.from_user.id)] = {
         "username": message.from_user.username,
         "name": message.from_user.first_name
     }
-
     save_all()
-
 
 # ---------- УДАЛЕНИЕ ----------
 def delete_last(chat_id):
@@ -67,132 +59,88 @@ def delete_last(chat_id):
                 pass
         last_bot_messages[chat_id] = []
 
-
 # ---------- /start ----------
 @bot.message_handler(commands=['start'])
 def start(message):
-
     save_user(message)
     delete_last(message.chat.id)
 
     markup = types.InlineKeyboardMarkup()
-
     btn1 = types.InlineKeyboardButton("♾️ Навсегда ♾️", callback_data="forever_699")
     btn2 = types.InlineKeyboardButton("📅 Месяц 📆", callback_data="month_299")
+    markup.add(btn1, btn2)
 
-    markup.add(btn1)
-    markup.add(btn2)
-
-    msg1 = bot.send_message(
-        message.chat.id,
-        "Привет, ищешь кружки 18+ для сочной дрочки?😈"
-    )
-
+    msg1 = bot.send_message(message.chat.id, "Привет, ищешь кружки 18+ для сочной дрочки?😈")
     msg2 = bot.send_message(
         message.chat.id,
         "😍ЗДЕСЬ ТЫ НАЙДЕШЬ КРУЖКИ С ДОМАШКОЙ, ИНТИМКАМИ, ДРОЧКОЙ, И ВСЕМИ ВИДАМИ ЕБЛИ 💥❤️ВЫБЕРИТЕ ПОДХОДЯЩИЙ ТАРИФ:\n\n🆘 Помощь: @midll",
         reply_markup=markup
     )
-
     last_bot_messages[message.chat.id] = [msg1.message_id, msg2.message_id]
-
 
 # ---------- АДМИН ----------
 @bot.message_handler(commands=['admin'])
 def admin_panel(message):
-
     if message.from_user.id != ADMIN_ID:
         return
 
     active_users = [u for u in users if u not in blocked_users]
-
     text = f"👤 Пользователи бота: {len(active_users)}\n\n"
 
     for user_id in active_users:
-
         data = users[user_id]
-
         username = data["username"]
         name = data["name"]
-
-        text += f"Имя: {name}\n"
-        text += f"Username: @{username if username else 'нет'}\n"
-        text += f"ID: {user_id}\n\n"
+        text += f"Имя: {name}\nUsername: @{username if username else 'нет'}\nID: {user_id}\n\n"
 
     bot.send_message(message.chat.id, text)
 
-
-# ---------- SPAM ----------
-@bot.message_handler(commands=['spam'], content_types=['text', 'photo', 'video'])
+# ---------- СПАМ (текст, фото, видео) ----------
+@bot.message_handler(content_types=['text', 'photo', 'video'])
 def spam(message):
-
     if message.from_user.id != ADMIN_ID:
         return
 
     text = ""
-    if message.text:
-        text = message.text.replace("/spam", "").strip()
+    if message.content_type == 'text':
+        if message.text.startswith("/spam"):
+            text = message.text.replace("/spam", "").strip()
+        else:
+            return
+    elif message.content_type in ['photo', 'video']:
+        if message.caption and message.caption.startswith("/spam"):
+            text = message.caption.replace("/spam", "").strip()
+        else:
+            return
 
+    # кнопки
     markup = types.InlineKeyboardMarkup()
-
-    btn1 = types.InlineKeyboardButton(
-        "♾️ Навсегда ♾️ СКИДКА!!!",
-        callback_data="forever_6̶9̶9̶₽̶ 499"
-    )
-
-    btn2 = types.InlineKeyboardButton(
-        "📅 Месяц 📅 СКИДКА!!!",
-        callback_data="month_2̶9̶9̶₽̶ 199"
-    )
-
-    markup.add(btn1)
-    markup.add(btn2)
+    btn1 = types.InlineKeyboardButton("♾️ Навсегда ♾️ СКИДКА!!!", callback_data="forever_6̶9̶9̶₽̶ 499")
+    btn2 = types.InlineKeyboardButton("📅 Месяц 📅 СКИДКА!!!", callback_data="month_2̶9̶9̶₽̶ 199")
+    markup.add(btn1, btn2)
 
     for user_id in list(users.keys()):
-
         if user_id in blocked_users or int(user_id) == ADMIN_ID:
             continue
 
         try:
-            # текст
             if message.content_type == 'text':
                 msg = bot.send_message(int(user_id), text, reply_markup=markup)
-
-            # фото
             elif message.content_type == 'photo':
-                msg = bot.send_photo(
-                    int(user_id),
-                    message.photo[-1].file_id,
-                    caption=text,
-                    reply_markup=markup
-                )
-
-            # видео
+                msg = bot.send_photo(int(user_id), message.photo[-1].file_id, caption=text, reply_markup=markup)
             elif message.content_type == 'video':
-                msg = bot.send_video(
-                    int(user_id),
-                    message.video.file_id,
-                    caption=text,
-                    reply_markup=markup
-                )
+                msg = bot.send_video(int(user_id), message.video.file_id, caption=text, reply_markup=markup)
 
-            # удаление через 30 минут
-            threading.Timer(
-                1800,
-                lambda m=msg: bot.delete_message(m.chat.id, m.message_id)
-            ).start()
+            threading.Timer(1800, lambda m=msg: bot.delete_message(m.chat.id, m.message_id)).start()
 
         except:
             blocked_users.add(user_id)
             save_all()
 
-
 # ---------- CALLBACK ----------
 @bot.callback_query_handler(func=lambda call: True)
 def callback(call):
-
     chat_id = call.message.chat.id
-
     delete_last(chat_id)
 
     if call.data.startswith("forever"):
@@ -218,18 +166,12 @@ def callback(call):
         return
 
     elif call.data == "paid":
-
         clocks = ["🕛","🕐","🕑","🕒","🕓","🕔","🕕","🕖","🕗","🕘","🕙","🕚"]
-
         msg_anim = bot.send_message(chat_id, "🕛 Проверка платежа...")
 
         for i in range(33):
             try:
-                bot.edit_message_text(
-                    f"{clocks[i % len(clocks)]} Проверка платежа...",
-                    chat_id,
-                    msg_anim.message_id
-                )
+                bot.edit_message_text(f"{clocks[i % len(clocks)]} Проверка платежа...", chat_id, msg_anim.message_id)
                 time.sleep(0.3)
             except:
                 pass
@@ -240,28 +182,21 @@ def callback(call):
             pass
 
         markup = types.InlineKeyboardMarkup()
-
         retry = types.InlineKeyboardButton("Повторить 🔁", callback_data="retry")
         cancel = types.InlineKeyboardButton("Отмена ❌", callback_data="cancel")
+        markup.add(retry, cancel)
 
-        markup.add(retry)
-        markup.add(cancel)
-
-        msg = bot.send_message(
-            chat_id,
+        msg = bot.send_message(chat_id,
             "Извините, но платеж не прошел или пришла не вся сумма за выбранный тариф. 🙁\n\nПовторите платеж пожалуйста. 🙏",
             reply_markup=markup
         )
-
     else:
         return
 
     last_bot_messages[chat_id] = [msg.message_id]
 
-
 # ---------- ОПЛАТА ----------
 def send_payment(chat_id, price):
-
     text = f"""💳 Способ оплаты: Перевод
 💸 К оплате: {price}
 
@@ -269,21 +204,11 @@ def send_payment(chat_id, price):
 
 ⭐ Оплатить звёздами:
 https://t.me/+umjEbHsWQNMyMzJi"""
-
     markup = types.InlineKeyboardMarkup()
-
-    markup.add(
-        types.InlineKeyboardButton(
-            "💳 Скопировать карту",
-            copy_text=types.CopyTextButton(text="2200702056542769")
-        )
-    )
-
+    markup.add(types.InlineKeyboardButton("💳 Скопировать карту", copy_text=types.CopyTextButton(text="2200702056542769")))
     markup.add(types.InlineKeyboardButton("✅ Я ОПЛАТИЛ", callback_data="paid"))
     markup.add(types.InlineKeyboardButton("❌ Отменить", callback_data="back"))
-
     return bot.send_message(chat_id, text, reply_markup=markup)
-
 
 # ---------- WEBHOOK ----------
 @app.route(f"/{TOKEN}", methods=["POST"])
@@ -293,19 +218,14 @@ def webhook():
     bot.process_new_updates([update])
     return "OK", 200
 
-
 @app.route("/")
 def home():
     return "Bot is running", 200
 
-
 # ---------- ЗАПУСК ----------
 if __name__ == "__main__":
-
-    load_users()  # <-- ВАЖНО
-
+    load_users()
     bot.remove_webhook()
     bot.set_webhook(url=f"https://kenda-bot.onrender.com/{TOKEN}")
-
     port = int(os.environ.get("PORT", 10000))
     app.run(host="0.0.0.0", port=port)
