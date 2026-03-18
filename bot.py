@@ -16,8 +16,9 @@ CARD_NUMBER = "2200702056542769"
 ADMIN_ID = 7203830273
 
 users = {}
+blocked_users = set()
 last_bot_messages = {}
-user_tariff = {}  # <-- запоминаем тариф
+user_tariff = {}
 
 
 # ---------- СОХРАНЕНИЕ ПОЛЬЗОВАТЕЛЯ ----------
@@ -29,6 +30,13 @@ def save_user(message):
         "username": message.from_user.username,
         "name": message.from_user.first_name
     }
+
+
+# ---------- ПОЛУЧЕНИЕ VIDEO_ID ----------
+@bot.message_handler(content_types=['video'])
+def get_video_id(message):
+    if message.from_user.id == ADMIN_ID:
+        print("VIDEO ID:", message.video.file_id)
 
 
 # ---------- УДАЛЕНИЕ ----------
@@ -78,9 +86,13 @@ def admin_panel(message):
     if message.from_user.id != ADMIN_ID:
         return
 
-    text = f"👤 Пользователи бота: {len(users)}\n\n"
+    active_users = [u for u in users if u not in blocked_users]
 
-    for user_id, data in users.items():
+    text = f"👤 Пользователи бота: {len(active_users)}\n\n"
+
+    for user_id in active_users:
+
+        data = users[user_id]
 
         username = data["username"]
         name = data["name"]
@@ -99,7 +111,10 @@ def spam(message):
     if message.from_user.id != ADMIN_ID:
         return
 
-    for user_id in users:
+    for user_id in list(users.keys()):
+
+        if user_id in blocked_users:
+            continue
 
         markup = types.InlineKeyboardMarkup()
 
@@ -116,9 +131,10 @@ def spam(message):
         markup.add(btn1)
         markup.add(btn2)
 
-        msg = bot.send_message(
-            user_id,
-            """Привет любимый 💋
+        try:
+            msg = bot.send_message(
+                user_id,
+                """Привет любимый 💋
 
 😒 Все еще смотришь обычное porно? Это все очень скучно...
 🥴 Не хочешь посмотреть на то как я присылаю кружок где стону тебе.?) 
@@ -126,13 +142,64 @@ def spam(message):
             
 🎁 Можешь купить прям сейчас, а иначе через час удалю сообщение!
 ⬇️⬇️⬇️⬇️⬇️⬇️⬇️⬇️⬇️""",
-            reply_markup=markup
+                reply_markup=markup
+            )
+
+            threading.Timer(
+                3600,
+                lambda m=msg: bot.delete_message(m.chat.id, m.message_id)
+            ).start()
+
+        except:
+            blocked_users.add(user_id)
+
+
+# ---------- SPAM С ВИДЕО ----------
+@bot.message_handler(commands=['spam1'])
+def spam_video(message):
+
+    if message.from_user.id != ADMIN_ID:
+        return
+
+    video_file_id = "ВСТАВЬ_СЮДА_VIDEO_ID"  # <-- ВСТАВЬ СЮДА
+
+    for user_id in list(users.keys()):
+
+        if user_id in blocked_users:
+            continue
+
+        markup = types.InlineKeyboardMarkup()
+
+        btn1 = types.InlineKeyboardButton(
+            "♾️ Навсегда ♾️ СКИДКА!!!",
+            callback_data="forever_6̶9̶9̶₽̶ 499"
         )
 
-        threading.Timer(
-            3600,
-            lambda m=msg: bot.delete_message(m.chat.id, m.message_id)
-        ).start()
+        btn2 = types.InlineKeyboardButton(
+            "📅 Месяц 📅 СКИДКА!!!",
+            callback_data="month_2̶9̶9̶₽̶ 199"
+        )
+
+        markup.add(btn1)
+        markup.add(btn2)
+
+        try:
+            bot.send_video(
+                user_id,
+                video_file_id,
+                caption="""Привет любимый 💋
+
+😒 Все еще смотришь обычное porно? Это все очень скучно...
+🥴 Не хочешь посмотреть на то как я присылаю кружок где стону тебе.?) 
+😁 У меня есть для тебя предложение в виде скидки 30% на все тарифы!!!
+            
+🎁 Можешь купить прям сейчас, а иначе через час удалю сообщение!
+⬇️⬇️⬇️⬇️⬇️⬇️⬇️⬇️⬇️""",
+                reply_markup=markup
+            )
+
+        except:
+            blocked_users.add(user_id)
 
 
 # ---------- CALLBACK ----------
@@ -143,7 +210,6 @@ def callback(call):
 
     delete_last(chat_id)
 
-    # ===== ВЫБОР ТАРИФА =====
     if call.data.startswith("forever"):
         price = call.data.split("_")[1] + "₽"
         user_tariff[chat_id] = price
@@ -166,7 +232,6 @@ def callback(call):
         start(call.message)
         return
 
-    # ===== Я ОПЛАТИЛ =====
     elif call.data == "paid":
 
         clocks = ["🕛","🕐","🕑","🕒","🕓","🕔","🕕","🕖","🕗","🕘","🕙","🕚"]
