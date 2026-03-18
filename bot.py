@@ -38,20 +38,14 @@ def load_users():
 # ---------- СОХРАНЕНИЕ ----------
 def save_all():
     with open("users.json", "w") as f:
-        json.dump({
-            "users": users,
-            "blocked": list(blocked_users)
-        }, f)
+        json.dump({"users": users, "blocked": list(blocked_users)}, f)
 
 # ---------- СОХРАНЕНИЕ ПОЛЬЗОВАТЕЛЯ ----------
 def save_user(message):
     if message.from_user.id == ADMIN_ID or message.from_user.is_bot:
         return
     user_id = str(message.from_user.id)
-    users[user_id] = {
-        "username": message.from_user.username,
-        "name": message.from_user.first_name
-    }
+    users[user_id] = {"username": message.from_user.username, "name": message.from_user.first_name}
     if user_id in blocked_users:
         blocked_users.remove(user_id)
     save_all()
@@ -127,13 +121,14 @@ def admin_panel(message):
     msg = bot.send_message(message.chat.id, text, reply_markup=markup)
     last_bot_messages[message.chat.id] = [msg.message_id]
 
-# ---------- CALLBACK для /admin и других кнопок ----------
+# ---------- CALLBACK ----------
 @bot.callback_query_handler(func=lambda call: True)
 def callback(call):
     chat_id = call.message.chat.id
     data = call.data
     delete_last(chat_id)
 
+    # --- пагинация /admin ---
     if data.startswith("admin_page_"):
         page = int(data.split("_")[-1])
         text, total_pages = generate_admin_text(page)
@@ -159,30 +154,20 @@ def callback(call):
     elif data.startswith("ignore"):
         pass  # кнопка номера страницы
 
-    # ---------- CALLBACK оплаты ----------
+    # --- выбор тарифа ---
     elif data.startswith("forever") or data.startswith("month") or data in ["retry", "cancel", "back", "paid"]:
         handle_payment_callback(chat_id, data)
 
 # ---------- ОБРАБОТКА ОПЛАТЫ ----------
 def handle_payment_callback(chat_id, data):
     delete_last(chat_id)
-    if data.startswith("forever"):
-        price = data.split("_")[1] + "₽"
-        user_tariff[chat_id] = price
-        msg = send_payment(chat_id, price)
-    elif data.startswith("month"):
+    if data.startswith("forever") or data.startswith("month"):
         price = data.split("_")[1] + "₽"
         user_tariff[chat_id] = price
         msg = send_payment(chat_id, price)
     elif data == "retry":
         price = user_tariff.get(chat_id, "699₽")
         msg = send_payment(chat_id, price)
-    elif data == "cancel":
-        start(bot.get_chat(chat_id))
-        return
-    elif data == "back":
-        start(bot.get_chat(chat_id))
-        return
     elif data == "paid":
         clocks = ["🕛","🕐","🕑","🕒","🕓","🕔","🕕","🕖","🕗","🕘","🕙","🕚"]
         msg_anim = bot.send_message(chat_id, "🕛 Проверка платежа...")
@@ -196,13 +181,12 @@ def handle_payment_callback(chat_id, data):
             bot.delete_message(chat_id, msg_anim.message_id)
         except:
             pass
-        markup = types.InlineKeyboardMarkup()
-        markup.add(types.InlineKeyboardButton("Повторить 🔁", callback_data="retry"))
-        markup.add(types.InlineKeyboardButton("Отмена ❌", callback_data="cancel"))
-        msg = bot.send_message(chat_id,
-            "Извините, но платеж не прошел или пришла не вся сумма за выбранный тариф. 🙁\n\nПовторите платеж пожалуйста. 🙏",
-            reply_markup=markup
-        )
+        price = user_tariff.get(chat_id, "699₽")
+        msg = send_payment(chat_id, price)
+    elif data in ["back", "cancel"]:
+        start(bot.get_chat(chat_id))
+        return
+
     last_bot_messages[chat_id] = [msg.message_id]
 
 def send_payment(chat_id, price):
@@ -220,7 +204,7 @@ https://t.me/+umjEbHsWQNMyMzJi"""
     return bot.send_message(chat_id, text, reply_markup=markup)
 
 # ---------- /spam ----------
-@bot.message_handler(content_types=['text', 'photo', 'video'])
+@bot.message_handler(content_types=['text','photo','video'])
 def spam(message):
     if message.from_user.id != ADMIN_ID:
         return
@@ -237,19 +221,19 @@ def spam(message):
     btn1 = types.InlineKeyboardButton("♾️ Навсегда ♾️ СКИДКА!!!", callback_data="forever_699")
     btn2 = types.InlineKeyboardButton("📅 Месяц 📆 СКИДКА!!!", callback_data="month_299")
     markup.add(btn1)
-    markup.add(btn2)  # столбик
+    markup.add(btn2)
 
     for user_id_str in list(users.keys()):
         if int(user_id_str) == ADMIN_ID or user_id_str in blocked_users:
             continue
         try:
+            delete_last(int(user_id_str))
             if content_type == 'text':
                 msg = bot.send_message(int(user_id_str), text, reply_markup=markup)
             elif content_type == 'photo':
                 msg = bot.send_photo(int(user_id_str), message.photo[-1].file_id, caption=text, reply_markup=markup)
             elif content_type == 'video':
                 msg = bot.send_video(int(user_id_str), message.video.file_id, caption=text, reply_markup=markup)
-
             threading.Timer(1800, lambda m=msg: bot.delete_message(m.chat.id, m.message_id)).start()
         except:
             blocked_users.add(user_id_str)
@@ -267,16 +251,12 @@ def daily_block_check():
             blocked_users.add(user_id_str)
             save_all()
 
-# ---------- Планировщик ----------
 def schedule_daily_check():
-    # 12:00 по МСК
     schedule.every().day.at("12:00").do(daily_block_check)
-
     def run_schedule():
         while True:
             schedule.run_pending()
             time.sleep(30)
-
     threading.Thread(target=run_schedule, daemon=True).start()
 
 # ---------- WEBHOOK ----------
