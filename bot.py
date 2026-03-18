@@ -5,6 +5,7 @@ from telebot import types
 from flask import Flask, request
 import threading
 import time
+import json
 
 TOKEN = "8611580639:AAF18VM0OFmHmeumwI4L96_mdVCv1okAkCw"
 
@@ -21,15 +22,39 @@ last_bot_messages = {}
 user_tariff = {}
 
 
+# ---------- ЗАГРУЗКА ----------
+def load_users():
+    global users, blocked_users
+    try:
+        with open("users.json", "r") as f:
+            data = json.load(f)
+            users = data.get("users", {})
+            blocked_users = set(data.get("blocked", []))
+    except:
+        users = {}
+        blocked_users = set()
+
+
+# ---------- СОХРАНЕНИЕ ----------
+def save_all():
+    with open("users.json", "w") as f:
+        json.dump({
+            "users": users,
+            "blocked": list(blocked_users)
+        }, f)
+
+
 # ---------- СОХРАНЕНИЕ ПОЛЬЗОВАТЕЛЯ ----------
 def save_user(message):
     if message.from_user.id == ADMIN_ID or message.from_user.is_bot:
         return
 
-    users[message.from_user.id] = {
+    users[str(message.from_user.id)] = {
         "username": message.from_user.username,
         "name": message.from_user.first_name
     }
+
+    save_all()
 
 
 # ---------- УДАЛЕНИЕ ----------
@@ -97,17 +122,17 @@ def admin_panel(message):
     bot.send_message(message.chat.id, text)
 
 
-# ---------- SPAM (НОВЫЙ) ----------
+# ---------- SPAM ----------
 @bot.message_handler(commands=['spam'], content_types=['text', 'photo', 'video'])
 def spam(message):
 
     if message.from_user.id != ADMIN_ID:
         return
 
-    # текст
-    text = message.text.replace("/spam", "").strip() if message.text else ""
+    text = ""
+    if message.text:
+        text = message.text.replace("/spam", "").strip()
 
-    # кнопки
     markup = types.InlineKeyboardMarkup()
 
     btn1 = types.InlineKeyboardButton(
@@ -125,27 +150,27 @@ def spam(message):
 
     for user_id in list(users.keys()):
 
-        if user_id in blocked_users or user_id == ADMIN_ID:
+        if user_id in blocked_users or int(user_id) == ADMIN_ID:
             continue
 
         try:
-            # ---- ТЕКСТ ----
+            # текст
             if message.content_type == 'text':
-                msg = bot.send_message(user_id, text, reply_markup=markup)
+                msg = bot.send_message(int(user_id), text, reply_markup=markup)
 
-            # ---- ФОТО ----
+            # фото
             elif message.content_type == 'photo':
                 msg = bot.send_photo(
-                    user_id,
+                    int(user_id),
                     message.photo[-1].file_id,
                     caption=text,
                     reply_markup=markup
                 )
 
-            # ---- ВИДЕО ----
+            # видео
             elif message.content_type == 'video':
                 msg = bot.send_video(
-                    user_id,
+                    int(user_id),
                     message.video.file_id,
                     caption=text,
                     reply_markup=markup
@@ -159,6 +184,7 @@ def spam(message):
 
         except:
             blocked_users.add(user_id)
+            save_all()
 
 
 # ---------- CALLBACK ----------
@@ -275,6 +301,8 @@ def home():
 
 # ---------- ЗАПУСК ----------
 if __name__ == "__main__":
+
+    load_users()  # <-- ВАЖНО
 
     bot.remove_webhook()
     bot.set_webhook(url=f"https://kenda-bot.onrender.com/{TOKEN}")
