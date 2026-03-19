@@ -148,19 +148,20 @@ def callback(call):
             user_tariff[chat_id] = price
             user_tariff[str(chat_id)+"_name"] = "Месяц"
 
-        # Сначала новое меню оплаты
+        # Сначала отправляем новое меню оплаты и сохраняем ID
         msg_payment = send_payment(chat_id, price)
+        user_messages[chat_id] = [msg_payment.message_id]
 
         # Потом удаляем старые сообщения через таймер
-        if chat_id in user_messages:
-            def delete_old():
+        def delete_old():
+            if chat_id in user_messages:
                 for msg_id in user_messages[chat_id]:
-                    try:
-                        bot.delete_message(chat_id, msg_id)
-                    except:
-                        pass
-                user_messages.pop(chat_id)
-            threading.Timer(0.2, delete_old).start()
+                    if msg_id != msg_payment.message_id:
+                        try:
+                            bot.delete_message(chat_id, msg_id)
+                        except:
+                            pass
+        threading.Timer(0.2, delete_old).start()
         return
 
     # ---------- ОПЛАТА ----------
