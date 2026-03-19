@@ -140,29 +140,32 @@ def callback(call):
 
     # ---------- ТАРИФ ----------
     if data.startswith("forever") or data.startswith("month"):
-        price = data.split("_")[1] + "₽"
-        if data.startswith("forever"):
-            user_tariff[chat_id] = price
-            user_tariff[str(chat_id)+"_name"] = "Навсегда"
-        else:
-            user_tariff[chat_id] = price
-            user_tariff[str(chat_id)+"_name"] = "Месяц"
+    price = data.split("_")[1] + "₽"
+    if data.startswith("forever"):
+        user_tariff[chat_id] = price
+        user_tariff[str(chat_id)+"_name"] = "Навсегда"
+    else:
+        user_tariff[chat_id] = price
+        user_tariff[str(chat_id)+"_name"] = "Месяц"
 
-        # Сначала отправляем новое меню оплаты и сохраняем ID
-        msg_payment = send_payment(chat_id, price)
-        user_messages[chat_id] = [msg_payment.message_id]
+    # ---------- 1. Отправляем новое сообщение с меню оплаты ----------
+    msg_payment = send_payment(chat_id, price)
 
-        # Потом удаляем старые сообщения через таймер
+    # ---------- 2. Удаляем старые сообщения через таймер ----------
+    if chat_id in user_messages:
+        old_messages = user_messages[chat_id].copy()  # копируем список
         def delete_old():
-            if chat_id in user_messages:
-                for msg_id in user_messages[chat_id]:
-                    if msg_id != msg_payment.message_id:
-                        try:
-                            bot.delete_message(chat_id, msg_id)
-                        except:
-                            pass
-        threading.Timer(0.2, delete_old).start()
-        return
+            for msg_id in old_messages:
+                if msg_id != msg_payment.message_id:  # не удаляем только что отправленное
+                    try:
+                        bot.delete_message(chat_id, msg_id)
+                    except:
+                        pass
+        threading.Timer(0.5, delete_old).start()  # небольшая задержка для надежности
+
+    # ---------- 3. Сохраняем новый ID сообщения ----------
+    user_messages[chat_id] = [msg_payment.message_id]
+    return
 
     # ---------- ОПЛАТА ----------
     if data == "paid":
