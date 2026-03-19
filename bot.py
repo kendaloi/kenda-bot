@@ -148,23 +148,24 @@ if data.startswith("forever") or data.startswith("month"):
         user_tariff[chat_id] = price
         user_tariff[str(chat_id)+"_name"] = "Месяц"
 
-    # ---------- 1. Отправляем новое сообщение с меню оплаты ----------
+    # Сначала отправляем новое сообщение с меню оплаты
     msg_payment = send_payment(chat_id, price)
 
-    # ---------- 2. Удаляем старые сообщения через таймер ----------
+    # Удаляем старые сообщения через таймер
     if chat_id in user_messages:
-        old_messages = user_messages[chat_id].copy()  # копируем список
+        old_messages = user_messages[chat_id].copy()
         def delete_old():
             for msg_id in old_messages:
-                if msg_id != msg_payment.message_id:  # не удаляем только что отправленное
+                if msg_id != msg_payment.message_id:
                     try:
                         bot.delete_message(chat_id, msg_id)
                     except:
                         pass
-        threading.Timer(0.5, delete_old).start()  # небольшая задержка для надежности
+        threading.Timer(0.5, delete_old).start()
 
-    # ---------- 3. Сохраняем новый ID сообщения ----------
+    # Сохраняем ID нового сообщения
     user_messages[chat_id] = [msg_payment.message_id]
+
     return
 
     # ---------- ОПЛАТА ----------
