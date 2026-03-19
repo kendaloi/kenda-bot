@@ -148,24 +148,25 @@ def callback(call):
             user_tariff[chat_id] = price
             user_tariff[str(chat_id)+"_name"] = "Месяц"
 
-        if chat_id in user_messages:
-            for msg_id in user_messages[chat_id]:
-                try:
-                    bot.delete_message(chat_id, msg_id)
-                except:
-                    pass
-            user_messages.pop(chat_id)
+        # Сначала новое меню оплаты
+        msg_payment = send_payment(chat_id, price)
 
-        threading.Timer(0.2, send_payment, args=(chat_id, price)).start()
+        # Потом удаляем старые сообщения через таймер
+        if chat_id in user_messages:
+            def delete_old():
+                for msg_id in user_messages[chat_id]:
+                    try:
+                        bot.delete_message(chat_id, msg_id)
+                    except:
+                        pass
+                user_messages.pop(chat_id)
+            threading.Timer(0.2, delete_old).start()
         return
 
     # ---------- ОПЛАТА ----------
     if data == "paid":
-        try:
-            msg = bot.send_message(chat_id, "🕛 Проверка платежа...")
-            threading.Timer(10, payment_failed, args=(chat_id,)).start()
-        except:
-            pass
+        msg_check = bot.send_message(chat_id, "🕛 Проверка платежа...")
+        threading.Timer(10, payment_failed, args=(chat_id,)).start()
         return
     if data == "back":
         bot.delete_message(chat_id, call.message.message_id)
@@ -193,7 +194,7 @@ def send_payment(chat_id, price):
     markup.add(types.InlineKeyboardButton("✅ Я ОПЛАТИЛ", callback_data="paid"))
     markup.add(types.InlineKeyboardButton("❌ Отменить", callback_data="back"))
 
-    bot.send_message(chat_id, text, reply_markup=markup)
+    return bot.send_message(chat_id, text, reply_markup=markup)
 
 def payment_failed(chat_id):
     text = "❌ Оплата не прошла"
