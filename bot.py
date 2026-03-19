@@ -92,7 +92,6 @@ def generate_admin_text(page=1):
     end_idx = start_idx + USERS_PER_PAGE
     subset = active_users_list[start_idx:end_idx]
 
-    # Добавлен смайлик перед текстом
     text = f"👥 Всего пользователей: {len(users)}\n\n"
     for user_id in subset:
         data = users[user_id]
@@ -107,13 +106,11 @@ def generate_admin_markup(page, total_pages):
     prev_page = page-1 if page>1 else total_pages
     next_page = page+1 if page<total_pages else 1
 
-    # Стрелки навигации + кнопка с номером страницы
     markup.add(
         types.InlineKeyboardButton("⬅️", callback_data=f"admin_page_{prev_page}"),
         types.InlineKeyboardButton(f"{page}", callback_data="ignore"),
         types.InlineKeyboardButton("➡️", callback_data=f"admin_page_{next_page}")
     )
-    # Кнопки удаления
     markup.add(
         types.InlineKeyboardButton("🚫 Удалить 🚫", callback_data="delete_blocked"),
         types.InlineKeyboardButton("✉️ Удалить ✉️", callback_data="delete_message")
@@ -130,39 +127,8 @@ def admin_panel(message):
     msg = bot.send_message(message.chat.id, text, reply_markup=markup)
     last_bot_messages[message.chat.id] = [msg.message_id]
 
-# ---------- Хендлер callback для /admin ----------
-@bot.callback_query_handler(func=lambda call: True)
-def admin_callback(call):
-    chat_id = call.message.chat.id
-    data = call.data
-
-    if data.startswith("admin_page_"):
-        page = int(data.split("_")[-1])
-        text, total_pages = generate_admin_text(page)
-        markup = generate_admin_markup(page, total_pages)
-        bot.edit_message_text(text, chat_id, call.message.message_id, reply_markup=markup)
-
-    elif data == "delete_blocked":
-        for user_id in list(blocked_users):
-            if user_id in users:
-                del users[user_id]
-        blocked_users.clear()
-        save_all()
-        text, total_pages = generate_admin_text(1)
-        markup = generate_admin_markup(1, total_pages)
-        bot.edit_message_text(text, chat_id, call.message.message_id, reply_markup=markup)
-
-    elif data == "delete_message":
-        try:
-            bot.delete_message(chat_id, call.message.message_id)
-        except:
-            pass
-
-    elif data == "ignore":
-        pass
-
-# ---------- /spam с кнопками столбиком ----------
-@bot.message_handler(content_types=['text', 'photo', 'video'])
+# ---------- /spam (текст, фото, видео) ----------
+@bot.message_handler(content_types=['text','photo','video'])
 def spam(message):
     if message.from_user.id != ADMIN_ID:
         return
@@ -199,13 +165,39 @@ def spam(message):
             blocked_users.add(user_id_str)
             save_all()
 
-# ---------- CALLBACK для оплаты и других кнопок ----------
+# ---------- ОБЪЕДИНЁННЫЙ CALLBACK ----------
 @bot.callback_query_handler(func=lambda call: True)
-def callback(call):
+def callback_handler(call):
     chat_id = call.message.chat.id
     data = call.data
-    delete_last(chat_id)
 
+    # ---------- АДМИН ----------
+    if data.startswith("admin_page_") or data in ["delete_blocked","delete_message","ignore"]:
+        if data.startswith("admin_page_"):
+            page = int(data.split("_")[-1])
+            text, total_pages = generate_admin_text(page)
+            markup = generate_admin_markup(page, total_pages)
+            bot.edit_message_text(text, chat_id, call.message.message_id, reply_markup=markup)
+        elif data == "delete_blocked":
+            for user_id in list(blocked_users):
+                if user_id in users:
+                    del users[user_id]
+            blocked_users.clear()
+            save_all()
+            text, total_pages = generate_admin_text(1)
+            markup = generate_admin_markup(1, total_pages)
+            bot.edit_message_text(text, chat_id, call.message.message_id, reply_markup=markup)
+        elif data == "delete_message":
+            try:
+                bot.delete_message(chat_id, call.message.message_id)
+            except:
+                pass
+        elif data == "ignore":
+            pass
+        return
+
+    # ---------- ОПЛАТА / ТАРИФ ----------
+    delete_last(chat_id)
     if data.startswith("forever"):
         price = data.split("_")[1] + "₽"
         user_tariff[chat_id] = price
@@ -217,10 +209,7 @@ def callback(call):
     elif data == "retry":
         price = user_tariff.get(chat_id, "699₽")
         msg = send_payment(chat_id, price)
-    elif data == "cancel":
-        start(call.message)
-        return
-    elif data == "back":
+    elif data == "cancel" or data == "back":
         start(call.message)
         return
     elif data == "paid":
@@ -243,8 +232,6 @@ def callback(call):
             "Извините, но платеж не прошел или пришла не вся сумма за выбранный тариф. 🙁\n\nПовторите платеж пожалуйста. 🙏",
             reply_markup=markup
         )
-    else:
-        return
     last_bot_messages[chat_id] = [msg.message_id]
 
 # ---------- ОПЛАТА ----------
