@@ -145,26 +145,26 @@ def callback(call):
 
     # ---------- ТАРИФ ----------
     if data.startswith("forever") or data.startswith("month"):
-        price = data.split("_")[1] + "₽"
+    price = data.split("_")[1] + "₽"
 
-        if data.startswith("forever"):
-            user_tariff[chat_id] = price
-            user_tariff[str(chat_id)+"_name"] = "Навсегда"
-        else:
-            user_tariff[chat_id] = price
-            user_tariff[str(chat_id)+"_name"] = "Месяц"
+    if data.startswith("forever"):
+        user_tariff[chat_id] = price
+        user_tariff[str(chat_id)+"_name"] = "Навсегда"
+    else:
+        user_tariff[chat_id] = price
+        user_tariff[str(chat_id)+"_name"] = "Месяц"
 
-        if chat_id in user_messages:
-            for msg_id in user_messages[chat_id]:
-                try:
-                    bot.delete_message(chat_id, msg_id)
-                except:
-                    pass
-            user_messages.pop(chat_id)
+    if chat_id in user_messages:
+        for msg_id in user_messages[chat_id]:
+            try:
+                bot.delete_message(chat_id, msg_id)
+            except:
+                pass
+        user_messages.pop(chat_id)
 
-        time.sleep(0.3)
-        send_payment(chat_id, price)
-        return
+    # ВАЖНО: отправляем с задержкой без блокировки
+    threading.Timer(0.2, send_payment, args=(chat_id, price)).start()
+    return
 
     # ---------- ОПЛАТА ----------
     if data == "paid":
