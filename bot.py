@@ -194,44 +194,44 @@ def callback_handler(call):
                 pass
         elif data == "ignore":
             pass
-        return
+        return  # завершение обработки админских кнопок
 
     # ---------- ОПЛАТА / ТАРИФ ----------
-if data.startswith("forever"):
-    price = data.split("_")[1] + "₽"
-    user_tariff[chat_id] = price
-    msg = send_payment(chat_id, price)
-elif data.startswith("month"):
-    price = data.split("_")[1] + "₽"
-    user_tariff[chat_id] = price
-    msg = send_payment(chat_id, price)
-elif data == "retry":
-    price = user_tariff.get(chat_id, "699₽")
-    msg = send_payment(chat_id, price)
-elif data == "cancel" or data == "back":
-    start(call.message)
-    return
-elif data == "paid":
-    clocks = ["🕛","🕐","🕑","🕒","🕓","🕔","🕕","🕖","🕗","🕘","🕙","🕚"]
-    msg_anim = bot.send_message(chat_id, "🕛 Проверка платежа...")
-    for i in range(33):
+    if data.startswith("forever"):
+        price = data.split("_")[1] + "₽"
+        user_tariff[chat_id] = price
+        msg = send_payment(chat_id, price)
+    elif data.startswith("month"):
+        price = data.split("_")[1] + "₽"
+        user_tariff[chat_id] = price
+        msg = send_payment(chat_id, price)
+    elif data == "retry":
+        price = user_tariff.get(chat_id, "699₽")
+        msg = send_payment(chat_id, price)
+    elif data == "cancel" or data == "back":
+        start(call.message)
+        return
+    elif data == "paid":
+        clocks = ["🕛","🕐","🕑","🕒","🕓","🕔","🕕","🕖","🕗","🕘","🕙","🕚"]
+        msg_anim = bot.send_message(chat_id, "🕛 Проверка платежа...")
+        for i in range(33):
+            try:
+                bot.edit_message_text(f"{clocks[i % len(clocks)]} Проверка платежа...", chat_id, msg_anim.message_id)
+                time.sleep(0.3)
+            except:
+                pass
         try:
-            bot.edit_message_text(f"{clocks[i % len(clocks)]} Проверка платежа...", chat_id, msg_anim.message_id)
-            time.sleep(0.3)
+            bot.delete_message(chat_id, msg_anim.message_id)
         except:
             pass
-    try:
-        bot.delete_message(chat_id, msg_anim.message_id)
-    except:
-        pass
-    markup = types.InlineKeyboardMarkup()
-    markup.add(types.InlineKeyboardButton("Повторить 🔁", callback_data="retry"))
-    markup.add(types.InlineKeyboardButton("Отмена ❌", callback_data="cancel"))
-    msg = bot.send_message(chat_id,
-        "Извините, но платеж не прошел или пришла не вся сумма за выбранный тариф. 🙁\n\nПовторите платеж пожалуйста. 🙏",
-        reply_markup=markup
-    )
-last_bot_messages[chat_id] = [msg.message_id]
+        markup = types.InlineKeyboardMarkup()
+        markup.add(types.InlineKeyboardButton("Повторить 🔁", callback_data="retry"))
+        markup.add(types.InlineKeyboardButton("Отмена ❌", callback_data="cancel"))
+        msg = bot.send_message(chat_id,
+            "Извините, но платеж не прошел или пришла не вся сумма за выбранный тариф. 🙁\n\nПовторите платеж пожалуйста. 🙏",
+            reply_markup=markup
+        )
+    last_bot_messages[chat_id] = [msg.message_id]
 
 # ---------- ОПЛАТА ----------
 def send_payment(chat_id, price):
