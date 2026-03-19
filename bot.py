@@ -19,10 +19,9 @@ users = {}
 blocked_users = set()
 last_bot_messages = {}
 user_tariff = {}
-
 USERS_PER_PAGE = 10
 
-# ---------- ЗАГРУЗКА ----------
+# ---------- Загрузка пользователей ----------
 def load_users():
     global users, blocked_users
     try:
@@ -34,7 +33,6 @@ def load_users():
         users = {}
         blocked_users = set()
 
-# ---------- СОХРАНЕНИЕ ----------
 def save_all():
     with open("users.json", "w") as f:
         json.dump({
@@ -42,7 +40,7 @@ def save_all():
             "blocked": list(blocked_users)
         }, f)
 
-# ---------- СОХРАНЕНИЕ ПОЛЬЗОВАТЕЛЯ ----------
+# ---------- Сохранение пользователя ----------
 def save_user(message):
     if message.from_user.id == ADMIN_ID or message.from_user.is_bot:
         return
@@ -55,7 +53,7 @@ def save_user(message):
         blocked_users.remove(user_id)
     save_all()
 
-# ---------- УДАЛЕНИЕ СООБЩЕНИЙ ----------
+# ---------- Удаление сообщений ----------
 def delete_last(chat_id):
     if chat_id in last_bot_messages:
         for msg_id in last_bot_messages[chat_id]:
@@ -105,7 +103,6 @@ def generate_admin_markup(page, total_pages):
     markup = types.InlineKeyboardMarkup()
     prev_page = page-1 if page>1 else total_pages
     next_page = page+1 if page<total_pages else 1
-
     markup.add(
         types.InlineKeyboardButton("⬅️", callback_data=f"admin_page_{prev_page}"),
         types.InlineKeyboardButton(f"{page}", callback_data="ignore"),
@@ -127,7 +124,7 @@ def admin_panel(message):
     msg = bot.send_message(message.chat.id, text, reply_markup=markup)
     last_bot_messages[message.chat.id] = [msg.message_id]
 
-# ---------- /spam (текст, фото, видео) ----------
+# ---------- /spam ----------
 @bot.message_handler(content_types=['text','photo','video'])
 def spam(message):
     if message.from_user.id != ADMIN_ID:
@@ -165,13 +162,13 @@ def spam(message):
             blocked_users.add(user_id_str)
             save_all()
 
-# ---------- ОБЪЕДИНЁННЫЙ CALLBACK ----------
+# ---------- Callback handler ----------
 @bot.callback_query_handler(func=lambda call: True)
 def callback_handler(call):
     chat_id = call.message.chat.id
     data = call.data
 
-    # ---------- АДМИН ----------
+    # ---------- Админ ----------
     if data.startswith("admin_page_") or data in ["delete_blocked","delete_message","ignore"]:
         if data.startswith("admin_page_"):
             page = int(data.split("_")[-1])
@@ -194,9 +191,9 @@ def callback_handler(call):
                 pass
         elif data == "ignore":
             pass
-        return  # завершение обработки админских кнопок
+        return
 
-    # ---------- ОПЛАТА / ТАРИФ ----------
+    # ---------- Оплата ----------
     if data.startswith("forever"):
         price = data.split("_")[1] + "₽"
         user_tariff[chat_id] = price
@@ -208,7 +205,7 @@ def callback_handler(call):
     elif data == "retry":
         price = user_tariff.get(chat_id, "699₽")
         msg = send_payment(chat_id, price)
-    elif data == "cancel" or data == "back":
+    elif data in ["cancel","back"]:
         start(call.message)
         return
     elif data == "paid":
@@ -233,7 +230,7 @@ def callback_handler(call):
         )
     last_bot_messages[chat_id] = [msg.message_id]
 
-# ---------- ОПЛАТА ----------
+# ---------- Оплата ----------
 def send_payment(chat_id, price):
     text = f"""💳 Способ оплаты: Перевод
 💸 К оплате: {price}
