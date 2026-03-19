@@ -157,7 +157,8 @@ def spam(message):
             elif content_type == 'video':
                 msg = bot.send_video(int(user_id_str), message.video.file_id, caption=text, reply_markup=markup)
 
-            threading.Timer(1800, lambda m=msg: bot.delete_message(m.chat.id, m.message_id)).start()
+            # Удаление через 30 минут
+            threading.Timer(1800, lambda m=msg: bot.delete_message(m.chat.id, m.message_id) if m else None).start()
         except:
             blocked_users.add(user_id_str)
             save_all()
@@ -192,6 +193,9 @@ def callback_handler(call):
         elif data == "ignore":
             pass
         return
+
+    # ---------- Удаляем предыдущие сообщения перед оплатой ----------
+    delete_last(chat_id)
 
     # ---------- Оплата ----------
     if data.startswith("forever"):
