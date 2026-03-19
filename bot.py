@@ -144,7 +144,7 @@ def callback(call):
         return
 
     # ---------- ТАРИФ ----------
-    if data.startswith("forever") or data.startswith("month"):
+if data.startswith("forever") or data.startswith("month"):
     price = data.split("_")[1] + "₽"
 
     if data.startswith("forever"):
@@ -162,7 +162,6 @@ def callback(call):
                 pass
         user_messages.pop(chat_id)
 
-    # ВАЖНО: отправляем с задержкой без блокировки
     threading.Timer(0.2, send_payment, args=(chat_id, price)).start()
     return
 
