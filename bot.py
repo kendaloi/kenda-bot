@@ -19,7 +19,6 @@ ADMIN_ID = 7203830273
 
 users = {}
 blocked_users = set()
-last_bot_messages = {}
 user_tariff = {}
 
 USERS_PER_PAGE = 10
@@ -60,17 +59,13 @@ def start(message):
     save_user(message)
 
     markup = types.InlineKeyboardMarkup()
-    markup.add(
-        types.InlineKeyboardButton("♾️ Навсегда ♾️", callback_data="forever_699")
-    )
-    markup.add(
-        types.InlineKeyboardButton("📅 Месяц 📆", callback_data="month_299")
-    )
+    markup.add(types.InlineKeyboardButton("♾️ Навсегда ♾️", callback_data="forever_699"))
+    markup.add(types.InlineKeyboardButton("📅 Месяц 📆", callback_data="month_299"))
 
     bot.send_message(message.chat.id, "Привет, ищешь кружки 18+ для сочной дрочки?😈")
     bot.send_message(
         message.chat.id,
-        "😍ЗДЕСЬ ТЫ НАЙДЕШЬ КРУЖКИ...\n\n🆘 Помощь: @midll",
+        "😍ЗДЕСЬ ТЫ НАЙДЕШЬ КРУЖКИ С ДОМАШКОЙ, ИНТИМКАМИ, ДРОЧКОЙ, И ВСЕМИ ВИДАМИ ЕБЛИ 💥❤️ВЫБЕРИТЕ ПОДХОДЯЩИЙ ТАРИФ:\n\n🆘 Помощь: @midll",
         reply_markup=markup
     )
 
@@ -91,7 +86,6 @@ def generate_admin_text(page=1):
 
 def generate_admin_markup(page, total):
     markup = types.InlineKeyboardMarkup()
-
     prev_page = page-1 if page>1 else total
     next_page = page+1 if page<total else 1
 
@@ -105,14 +99,12 @@ def generate_admin_markup(page, total):
         types.InlineKeyboardButton("🚫 Удалить 🚫", callback_data="delete_blocked"),
         types.InlineKeyboardButton("✉️ Удалить ✉️", callback_data="delete_msg")
     )
-
     return markup
 
 @bot.message_handler(commands=['admin'])
 def admin(message):
     if message.from_user.id != ADMIN_ID:
         return
-
     text, total = generate_admin_text(1)
     bot.send_message(message.chat.id, text, reply_markup=generate_admin_markup(1, total))
 
@@ -150,9 +142,19 @@ def callback(call):
         return
 
     # ТАРИФ
-    if data.startswith("forever") or data.startswith("month"):
+    if data.startswith("forever"):
         price = data.split("_")[1] + "₽"
         user_tariff[chat_id] = price
+        user_tariff[str(chat_id)+"_name"] = "Навсегда"
+
+        bot.delete_message(chat_id, call.message.message_id)
+        send_payment(chat_id, price)
+        return
+
+    if data.startswith("month"):
+        price = data.split("_")[1] + "₽"
+        user_tariff[chat_id] = price
+        user_tariff[str(chat_id)+"_name"] = "Месяц"
 
         bot.delete_message(chat_id, call.message.message_id)
         send_payment(chat_id, price)
@@ -173,11 +175,27 @@ def callback(call):
 
 # ---------- ОПЛАТА ----------
 def send_payment(chat_id, price):
+    tariff_name = user_tariff.get(str(chat_id)+"_name", "Навсегда")
+
+    text = f"""💳 Способ оплаты: Перевод
+📦 Тариф: {tariff_name}
+💸 К оплате: {price}
+
+🏦 Карта: {CARD_NUMBER}"""
+
     markup = types.InlineKeyboardMarkup()
+
+    markup.add(
+        types.InlineKeyboardButton(
+            "📋 Скопировать карту",
+            copy_text=types.CopyTextButton(text="1234567890")
+        )
+    )
+
     markup.add(types.InlineKeyboardButton("✅ Я ОПЛАТИЛ", callback_data="paid"))
     markup.add(types.InlineKeyboardButton("❌ Отменить", callback_data="back"))
 
-    bot.send_message(chat_id, f"💳 К оплате: {price}\n\nКарта: {CARD_NUMBER}", reply_markup=markup)
+    return bot.send_message(chat_id, text, reply_markup=markup)
 
 # ---------- /spam ----------
 @bot.message_handler(content_types=['text','photo','video'])
@@ -191,8 +209,8 @@ def spam(message):
     text = message.text.replace("/spam","") if message.content_type=="text" else message.caption.replace("/spam","")
 
     markup = types.InlineKeyboardMarkup()
-    markup.add(types.InlineKeyboardButton("♾️ Навсегда ♾️", callback_data="forever_699"))
-    markup.add(types.InlineKeyboardButton("📅 Месяц 📆", callback_data="month_299"))
+    markup.add(types.InlineKeyboardButton("♾️ Навсегда ♾️ СКИДКА!!!", callback_data="forever_499"))
+    markup.add(types.InlineKeyboardButton("📅 Месяц 📆 СКИДКА!!!", callback_data="month_199"))
 
     for uid in list(users.keys()):
         if uid in blocked_users:
