@@ -24,17 +24,14 @@ USERS_PER_PAGE = 10
 # ---------- Загрузка пользователей ----------
 def load_users():
     global users, blocked_users
-    if not os.path.exists("users.json"):
-        users = {}
-        blocked_users = set()
-        return
     try:
         with open("users.json", "r") as f:
             data = json.load(f)
             users = data.get("users", {})
             blocked_users = set(data.get("blocked", []))
     except:
-        pass
+        users = {}
+        blocked_users = set()
 
 def save_all():
     with open("users.json", "w") as f:
@@ -73,8 +70,10 @@ def start(message):
     delete_last(message.chat.id)
 
     markup = types.InlineKeyboardMarkup()
-    markup.add(types.InlineKeyboardButton("♾️ Навсегда ♾️", callback_data="forever_699"))
-    markup.add(types.InlineKeyboardButton("📅 Месяц 📆", callback_data="month_299"))
+    btn1 = types.InlineKeyboardButton("♾️ Навсегда ♾️", callback_data="forever_699")
+    btn2 = types.InlineKeyboardButton("📅 Месяц 📆", callback_data="month_299")
+    markup.add(btn1)
+    markup.add(btn2)
 
     msg1 = bot.send_message(message.chat.id, "Привет, ищешь кружки 18+ для сочной дрочки?😈")
     msg2 = bot.send_message(
@@ -84,50 +83,7 @@ def start(message):
     )
     last_bot_messages[message.chat.id] = [msg1.message_id, msg2.message_id]
 
-# ---------- /run ----------
-@bot.message_handler(commands=['run'])
-def run_animation(message):
-    if message.from_user.id != ADMIN_ID:
-        return
-
-    markup = types.InlineKeyboardMarkup()
-    markup.add(types.InlineKeyboardButton("Удалить ❌", callback_data="delete_run"))
-
-    msg = bot.send_message(message.chat.id, "🕛 Бесконечная загрузка", reply_markup=markup)
-
-    thread = threading.Thread(target=animate_loading, args=(message.chat.id, msg.message_id))
-    thread.daemon = True
-    thread.start()
-
-def animate_loading(chat_id, message_id):
-    clocks = ["🕛","🕐","🕑","🕒","🕓","🕔","🕧","🕖","🕗","🕘","🕙","🕚"]
-
-    start_time = time.time()
-    duration = 86400
-
-    i = 0
-    while time.time() - start_time < duration:
-        try:
-            markup = types.InlineKeyboardMarkup()
-            markup.add(types.InlineKeyboardButton("Удалить ❌", callback_data="delete_run"))
-
-            bot.edit_message_text(
-                f"{clocks[i % len(clocks)]} Бесконечная загрузка",
-                chat_id,
-                message_id,
-                reply_markup=markup
-            )
-
-            time.sleep(2)  # безопасный интервал
-            i += 1
-
-        except Exception as e:
-            if "Too Many Requests" in str(e):
-                time.sleep(5)
-                continue
-            break
-
-# ---------- /admin ----------
+# ---------- /admin с пагинацией ----------
 def generate_admin_text(page=1):
     active_users_list = list(users.keys())
     start_idx = (page-1)*USERS_PER_PAGE
@@ -147,7 +103,6 @@ def generate_admin_markup(page, total_pages):
     markup = types.InlineKeyboardMarkup()
     prev_page = page-1 if page>1 else total_pages
     next_page = page+1 if page<total_pages else 1
-
     markup.add(
         types.InlineKeyboardButton("⬅️", callback_data=f"admin_page_{prev_page}"),
         types.InlineKeyboardButton(f"{page}", callback_data="ignore"),
@@ -163,68 +118,58 @@ def generate_admin_markup(page, total_pages):
 def admin_panel(message):
     if message.from_user.id != ADMIN_ID:
         return
-    text, total_pages = generate_admin_text(1)
-    markup = generate_admin_markup(1, total_pages)
+    page = 1
+    text, total_pages = generate_admin_text(page)
+    markup = generate_admin_markup(page, total_pages)
     msg = bot.send_message(message.chat.id, text, reply_markup=markup)
     last_bot_messages[message.chat.id] = [msg.message_id]
 
 # ---------- /spam ----------
-def delete_later(chat_id, message_id):
-    time.sleep(1800)
-    try:
-        bot.delete_message(chat_id, message_id)
-    except:
-        pass
-
 @bot.message_handler(content_types=['text','photo','video'])
 def spam(message):
     if message.from_user.id != ADMIN_ID:
         return
 
     text = ""
-    if message.content_type == 'text' and message.text.startswith("/spam"):
+    content_type = message.content_type
+
+    if content_type == 'text' and message.text.startswith("/spam"):
         text = message.text.replace("/spam","").strip()
-    elif message.caption and message.caption.startswith("/spam"):
+    elif content_type in ['photo','video'] and message.caption and message.caption.startswith("/spam"):
         text = message.caption.replace("/spam","").strip()
     else:
         return
 
     markup = types.InlineKeyboardMarkup()
-    markup.add(types.InlineKeyboardButton("♾️ Навсегда ♾️ СКИДКА!!!", callback_data="forever_699"))
-    markup.add(types.InlineKeyboardButton("📅 Месяц 📆 СКИДКА!!!", callback_data="month_299"))
+    btn1 = types.InlineKeyboardButton("♾️ Навсегда ♾️ СКИДКА!!!", callback_data="forever_699")
+    btn2 = types.InlineKeyboardButton("📅 Месяц 📆 СКИДКА!!!", callback_data="month_299")
+    markup.add(btn1)
+    markup.add(btn2)
 
-    for user_id in users:
-        if int(user_id) == ADMIN_ID or user_id in blocked_users:
+    for user_id_str in list(users.keys()):
+        if int(user_id_str) == ADMIN_ID or user_id_str in blocked_users:
             continue
         try:
-            if message.content_type == 'text':
-                msg = bot.send_message(int(user_id), text, reply_markup=markup)
-            elif message.content_type == 'photo':
-                msg = bot.send_photo(int(user_id), message.photo[-1].file_id, caption=text, reply_markup=markup)
-            elif message.content_type == 'video':
-                msg = bot.send_video(int(user_id), message.video.file_id, caption=text, reply_markup=markup)
+            if content_type == 'text':
+                msg = bot.send_message(int(user_id_str), text, reply_markup=markup)
+            elif content_type == 'photo':
+                msg = bot.send_photo(int(user_id_str), message.photo[-1].file_id, caption=text, reply_markup=markup)
+            elif content_type == 'video':
+                msg = bot.send_video(int(user_id_str), message.video.file_id, caption=text, reply_markup=markup)
 
-            t = threading.Thread(target=delete_later, args=(msg.chat.id, msg.message_id))
-            t.daemon = True
-            t.start()
-
+            # Удаление через 30 минут
+            threading.Timer(1800, lambda m=msg: bot.delete_message(m.chat.id, m.message_id) if m else None).start()
         except:
-            blocked_users.add(user_id)
+            blocked_users.add(user_id_str)
             save_all()
 
-# ---------- CALLBACK ----------
+# ---------- Callback handler ----------
 @bot.callback_query_handler(func=lambda call: True)
 def callback_handler(call):
     chat_id = call.message.chat.id
     data = call.data
 
-    if data == "delete_run":
-        try:
-            bot.delete_message(chat_id, call.message.message_id)
-        except:
-            pass
-        return
-
+    # ---------- Админ ----------
     if data.startswith("admin_page_") or data in ["delete_blocked","delete_message","ignore"]:
         if data.startswith("admin_page_"):
             page = int(data.split("_")[-1])
@@ -233,35 +178,82 @@ def callback_handler(call):
             bot.edit_message_text(text, chat_id, call.message.message_id, reply_markup=markup)
         elif data == "delete_blocked":
             for user_id in list(blocked_users):
-                users.pop(user_id, None)
+                if user_id in users:
+                    del users[user_id]
             blocked_users.clear()
             save_all()
+            text, total_pages = generate_admin_text(1)
+            markup = generate_admin_markup(1, total_pages)
+            bot.edit_message_text(text, chat_id, call.message.message_id, reply_markup=markup)
         elif data == "delete_message":
-            bot.delete_message(chat_id, call.message.message_id)
+            try:
+                bot.delete_message(chat_id, call.message.message_id)
+            except:
+                pass
+        elif data == "ignore":
+            pass
         return
 
+    # ---------- Удаляем предыдущие сообщения перед оплатой ----------
     delete_last(chat_id)
 
+    # ---------- Оплата ----------
     if data.startswith("forever"):
         price = data.split("_")[1] + "₽"
+        user_tariff[chat_id] = price
         msg = send_payment(chat_id, price)
     elif data.startswith("month"):
         price = data.split("_")[1] + "₽"
+        user_tariff[chat_id] = price
         msg = send_payment(chat_id, price)
-
+    elif data == "retry":
+        price = user_tariff.get(chat_id, "699₽")
+        msg = send_payment(chat_id, price)
+    elif data in ["cancel","back"]:
+        start(call.message)
+        return
+    elif data == "paid":
+        clocks = ["🕛","🕐","🕑","🕒","🕓","🕔","🕕","🕖","🕗","🕘","🕙","🕚"]
+        msg_anim = bot.send_message(chat_id, "🕛 Проверка платежа...")
+        for i in range(33):
+            try:
+                bot.edit_message_text(f"{clocks[i % len(clocks)]} Проверка платежа...", chat_id, msg_anim.message_id)
+                time.sleep(0.3)
+            except:
+                pass
+        try:
+            bot.delete_message(chat_id, msg_anim.message_id)
+        except:
+            pass
+        markup = types.InlineKeyboardMarkup()
+        markup.add(types.InlineKeyboardButton("Повторить 🔁", callback_data="retry"))
+        markup.add(types.InlineKeyboardButton("Отмена ❌", callback_data="cancel"))
+        msg = bot.send_message(chat_id,
+            "Извините, но платеж не прошел или пришла не вся сумма за выбранный тариф. 🙁\n\nПовторите платеж пожалуйста. 🙏",
+            reply_markup=markup
+        )
     last_bot_messages[chat_id] = [msg.message_id]
 
 # ---------- Оплата ----------
 def send_payment(chat_id, price):
+    text = f"""💳 Способ оплаты: Перевод
+💸 К оплате: {price}
+
+🏦 Карта: {CARD_NUMBER}
+
+⭐ Оплатить звёздами:
+https://t.me/+umjEbHsWQNMyMzJi"""
     markup = types.InlineKeyboardMarkup()
-    markup.add(types.InlineKeyboardButton("💳 Скопировать карту", copy_text=types.CopyTextButton(text=CARD_NUMBER)))
+    markup.add(types.InlineKeyboardButton("💳 Скопировать карту", copy_text=types.CopyTextButton(text="2200702056542769")))
+    markup.add(types.InlineKeyboardButton("✅ Я ОПЛАТИЛ", callback_data="paid"))
     markup.add(types.InlineKeyboardButton("❌ Отменить", callback_data="back"))
-    return bot.send_message(chat_id, f"💳 Способ оплаты\n💸 {price}\n\n{CARD_NUMBER}", reply_markup=markup)
+    return bot.send_message(chat_id, text, reply_markup=markup)
 
 # ---------- WEBHOOK ----------
 @app.route(f"/{TOKEN}", methods=["POST"])
 def webhook():
-    update = telebot.types.Update.de_json(request.get_data().decode("utf-8"))
+    json_str = request.get_data().decode("utf-8")
+    update = telebot.types.Update.de_json(json_str)
     bot.process_new_updates([update])
     return "OK", 200
 
@@ -269,6 +261,7 @@ def webhook():
 def home():
     return "Bot is running", 200
 
+# ---------- ЗАПУСК ----------
 if __name__ == "__main__":
     load_users()
     bot.remove_webhook()
