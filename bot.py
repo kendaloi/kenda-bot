@@ -20,6 +20,7 @@ ADMIN_ID = 7203830273
 users = {}
 blocked_users = set()
 user_tariff = {}
+user_messages = {}
 
 USERS_PER_PAGE = 10
 
@@ -62,14 +63,16 @@ def start(message):
     markup.add(types.InlineKeyboardButton("♾️ Навсегда ♾️", callback_data="forever_699"))
     markup.add(types.InlineKeyboardButton("📅 Месяц 📆", callback_data="month_299"))
 
-    bot.send_message(message.chat.id, "Привет, ищешь кружки 18+ для сочной дрочки?😈")
-    bot.send_message(
+    msg1 = bot.send_message(message.chat.id, "Привет, ищешь кружки 18+ для сочной дрочки?😈")
+    msg2 = bot.send_message(
         message.chat.id,
         "😍ЗДЕСЬ ТЫ НАЙДЕШЬ КРУЖКИ С ДОМАШКОЙ, ИНТИМКАМИ, ДРОЧКОЙ, И ВСЕМИ ВИДАМИ ЕБЛИ 💥❤️ВЫБЕРИТЕ ПОДХОДЯЩИЙ ТАРИФ:\n\n🆘 Помощь: @midll",
         reply_markup=markup
     )
 
-# ---------- /admin ----------
+    user_messages[message.chat.id] = [msg1.message_id, msg2.message_id]
+
+# ---------- ADMIN ----------
 def generate_admin_text(page=1):
     user_list = list(users.keys())
     start_idx = (page-1)*USERS_PER_PAGE
@@ -116,7 +119,6 @@ def callback(call):
 
     bot.answer_callback_query(call.id)
 
-    # ADMIN
     if data.startswith("admin_"):
         page = int(data.split("_")[1])
         text, total = generate_admin_text(page)
@@ -141,26 +143,30 @@ def callback(call):
     if data == "ignore":
         return
 
-    # ТАРИФ
-    if data.startswith("forever"):
+    # ---------- ТАРИФ ----------
+    if data.startswith("forever") or data.startswith("month"):
         price = data.split("_")[1] + "₽"
-        user_tariff[chat_id] = price
-        user_tariff[str(chat_id)+"_name"] = "Навсегда"
 
-        bot.delete_message(chat_id, call.message.message_id)
+        if data.startswith("forever"):
+            user_tariff[chat_id] = price
+            user_tariff[str(chat_id)+"_name"] = "Навсегда"
+        else:
+            user_tariff[chat_id] = price
+            user_tariff[str(chat_id)+"_name"] = "Месяц"
+
+        if chat_id in user_messages:
+            for msg_id in user_messages[chat_id]:
+                try:
+                    bot.delete_message(chat_id, msg_id)
+                except:
+                    pass
+            user_messages.pop(chat_id)
+
+        time.sleep(0.3)
         send_payment(chat_id, price)
         return
 
-    if data.startswith("month"):
-        price = data.split("_")[1] + "₽"
-        user_tariff[chat_id] = price
-        user_tariff[str(chat_id)+"_name"] = "Месяц"
-
-        bot.delete_message(chat_id, call.message.message_id)
-        send_payment(chat_id, price)
-        return
-
-    # ОПЛАТА
+    # ---------- ОПЛАТА ----------
     if data == "paid":
         msg = bot.send_message(chat_id, "🕛 Проверка платежа...")
         time.sleep(2)
@@ -188,7 +194,7 @@ def send_payment(chat_id, price):
     markup.add(
         types.InlineKeyboardButton(
             "📋 Скопировать карту",
-            copy_text=types.CopyTextButton(text="1234567890")
+            copy_text=types.CopyTextButton(text=CARD_NUMBER)
         )
     )
 
@@ -196,38 +202,6 @@ def send_payment(chat_id, price):
     markup.add(types.InlineKeyboardButton("❌ Отменить", callback_data="back"))
 
     return bot.send_message(chat_id, text, reply_markup=markup)
-
-# ---------- /spam ----------
-@bot.message_handler(content_types=['text','photo','video'])
-def spam(message):
-    if message.from_user.id != ADMIN_ID:
-        return
-
-    if message.content_type == "text" and not message.text.startswith("/spam"):
-        return
-
-    text = message.text.replace("/spam","") if message.content_type=="text" else message.caption.replace("/spam","")
-
-    markup = types.InlineKeyboardMarkup()
-    markup.add(types.InlineKeyboardButton("♾️ Навсегда ♾️ СКИДКА!!!", callback_data="forever_499"))
-    markup.add(types.InlineKeyboardButton("📅 Месяц 📆 СКИДКА!!!", callback_data="month_199"))
-
-    for uid in list(users.keys()):
-        if uid in blocked_users:
-            continue
-        try:
-            if message.content_type == "text":
-                msg = bot.send_message(int(uid), text, reply_markup=markup)
-            elif message.content_type == "photo":
-                msg = bot.send_photo(int(uid), message.photo[-1].file_id, caption=text, reply_markup=markup)
-            else:
-                msg = bot.send_video(int(uid), message.video.file_id, caption=text, reply_markup=markup)
-
-            threading.Timer(1800, lambda m=msg: bot.delete_message(m.chat.id, m.message_id)).start()
-
-        except:
-            blocked_users.add(uid)
-            save_all()
 
 # ---------- ПРОВЕРКА ----------
 def check_blocked():
