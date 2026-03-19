@@ -139,7 +139,7 @@ def callback(call):
         return
 
     # ---------- ТАРИФ ----------
-    if data.startswith("forever") or data.startswith("month"):
+if data.startswith("forever") or data.startswith("month"):
     price = data.split("_")[1] + "₽"
     if data.startswith("forever"):
         user_tariff[chat_id] = price
