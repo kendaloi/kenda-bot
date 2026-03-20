@@ -252,7 +252,7 @@ def callback_handler(call):
     elif data in ["cancel","back"]:
         start(call.message)
         return
-elif data == "paid":
+if data == "paid":
     clocks = ["🕛","🕐","🕑","🕒","🕓","🕔","🕧","🕖","🕗","🕘","🕙","🕚"]
 
     msg_anim = bot.send_message(chat_id, "🕛 Проверка платежа...")
