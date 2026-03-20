@@ -83,9 +83,16 @@ def run_command(message):
     run_tasks[msg.message_id] = True
 
     def animate():
-        clocks = ["🕛","🕐","🕑","🕒","🕓","🕔","🕕","🕖","🕗","🕘","🕙","🕚"]
+        clocks = ["🕛","🕐","🕑","🕒","🕓","🕔","🕧","🕖","🕗","🕘","🕙","🕚"]
+        start_time = time.time()
         i = 0
+
         while run_tasks.get(msg.message_id):
+            # 24 часа = 86400 секунд
+            if time.time() - start_time > 86400:
+                run_tasks[msg.message_id] = False
+                break
+
             try:
                 bot.edit_message_text(
                     f"{clocks[i % len(clocks)]} Бесконечная загрузка",
@@ -94,7 +101,7 @@ def run_command(message):
                     reply_markup=markup
                 )
                 i += 1
-                time.sleep(5)
+                time.sleep(3)
             except:
                 break
 
