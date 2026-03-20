@@ -23,7 +23,7 @@ USERS_PER_PAGE = 10
 
 run_tasks = {}
 
-# ---------- Загрузка ----------
+# ---------- Загрузка пользователей ----------
 def load_users():
     global users, blocked_users
     try:
@@ -71,12 +71,12 @@ def run_command(message):
         return
 
     chat_id = message.chat.id
+    save_user(message)
 
     markup = types.InlineKeyboardMarkup()
     markup.add(types.InlineKeyboardButton("Удалить ❌", callback_data="stop_run"))
 
     msg = bot.send_message(chat_id, "🕛 Бесконечная загрузка", reply_markup=markup)
-
     run_tasks[msg.message_id] = True
 
     def animate():
@@ -84,14 +84,10 @@ def run_command(message):
         i = 0
         start_time = time.time()
 
-        while True:
-            if not run_tasks.get(msg.message_id):
-                break
-
+        while run_tasks.get(msg.message_id):
             if time.time() - start_time > 86400:
                 run_tasks[msg.message_id] = False
                 break
-
             try:
                 bot.edit_message_text(
                     f"{clocks[i % len(clocks)]} Бесконечная загрузка",
@@ -102,7 +98,6 @@ def run_command(message):
                 i += 1
             except:
                 pass
-
             time.sleep(3)
 
     threading.Thread(target=animate, daemon=True).start()
@@ -120,7 +115,8 @@ def start(message):
     )
 
     msg1 = bot.send_message(message.chat.id, "Привет, ищешь кружки 18+ для сочной дрочки?😈")
-    msg2 = bot.send_message(message.chat.id,
+    msg2 = bot.send_message(
+        message.chat.id,
         "😍ЗДЕСЬ ТЫ НАЙДЕШЬ КРУЖКИ С ДОМАШКОЙ, ИНТИМКАМИ, ДРОЧКОЙ, И ВСЕМИ ВИДАМИ ЕБЛИ 💥❤️ВЫБЕРИТЕ ПОДХОДЯЩИЙ ТАРИФ:\n\n🆘 Помощь: @midll",
         reply_markup=markup
     )
@@ -200,7 +196,7 @@ def spam(message):
             elif content_type == 'video':
                 msg = bot.send_video(int(user_id_str), message.video.file_id, caption=text, reply_markup=markup)
 
-            threading.Timer(1800, lambda m=msg: bot.delete_message(m.chat.id, m.message_id)).start()
+            threading.Timer(1800, lambda m=msg: bot.delete_message(m.chat.id, m.message_id) if m else None).start()
         except:
             blocked_users.add(user_id_str)
             save_all()
@@ -211,6 +207,7 @@ def callback_handler(call):
     chat_id = call.message.chat.id
     data = call.data
 
+    # ---------- /run стоп ----------
     if data == "stop_run":
         run_tasks[call.message.message_id] = False
         try:
@@ -219,7 +216,7 @@ def callback_handler(call):
             pass
         return
 
-    # админ
+    # ---------- Админ ----------
     if data.startswith("admin_page_") or data in ["delete_blocked","delete_message","ignore"]:
         if data.startswith("admin_page_"):
             page = int(data.split("_")[-1])
@@ -233,9 +230,13 @@ def callback_handler(call):
             blocked_users.clear()
             save_all()
         elif data == "delete_message":
-            bot.delete_message(chat_id, call.message.message_id)
+            try:
+                bot.delete_message(chat_id, call.message.message_id)
+            except:
+                pass
         return
 
+    # ---------- Оплата ----------
     delete_last(chat_id)
 
     if data.startswith("forever"):
@@ -252,39 +253,44 @@ def callback_handler(call):
     elif data in ["cancel","back"]:
         start(call.message)
         return
-if data == "paid":
-    clocks = ["🕛","🕐","🕑","🕒","🕓","🕔","🕧","🕖","🕗","🕘","🕙","🕚"]
+    elif data == "paid":
+        clocks = ["🕛","🕐","🕑","🕒","🕓","🕔","🕧","🕖","🕗","🕘","🕙","🕚"]
 
-    msg_anim = bot.send_message(chat_id, "🕛 Проверка платежа...")
-
-    # Анимация 10 секунд
-    for i in range(10):
         try:
-            bot.edit_message_text(
-                f"{clocks[i % len(clocks)]} Проверка платежа...",
-                chat_id,
-                msg_anim.message_id
-            )
+            msg_anim = bot.send_message(chat_id, "🕛 Проверка платежа...")
         except:
-            pass
-        time.sleep(1)
+            msg_anim = None
 
-    # Удаляем сообщение
-    try:
-        bot.delete_message(chat_id, msg_anim.message_id)
-    except:
-        pass
+        for i in range(10):
+            if not msg_anim:
+                break
+            try:
+                bot.edit_message_text(
+                    f"{clocks[i % len(clocks)]} Проверка платежа...",
+                    chat_id,
+                    msg_anim.message_id
+                )
+            except:
+                pass
+            time.sleep(1)
 
-    # Сообщение об ошибке
-    markup = types.InlineKeyboardMarkup()
-    markup.add(types.InlineKeyboardButton("Повторить 🔁", callback_data="retry"))
-    markup.add(types.InlineKeyboardButton("Отмена ❌", callback_data="cancel"))
+        if msg_anim:
+            try:
+                bot.delete_message(chat_id, msg_anim.message_id)
+            except:
+                pass
 
-    msg = bot.send_message(
-        chat_id,
-        "Извините, но платеж не прошел или пришла не вся сумма за выбранный тариф. 🙁\n\nПовторите платеж пожалуйста. 🙏",
-        reply_markup=markup
-    )
+        markup = types.InlineKeyboardMarkup()
+        markup.add(types.InlineKeyboardButton("Повторить 🔁", callback_data="retry"))
+        markup.add(types.InlineKeyboardButton("Отмена ❌", callback_data="cancel"))
+
+        msg = bot.send_message(
+            chat_id,
+            "Извините, но платеж не прошел или пришла не вся сумма за выбранный тариф. 🙁\n\nПовторите платеж пожалуйста. 🙏",
+            reply_markup=markup
+        )
+
+    last_bot_messages[chat_id] = [msg.message_id]
 
 # ---------- Оплата ----------
 def send_payment(chat_id, price):
