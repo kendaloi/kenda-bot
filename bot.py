@@ -21,7 +21,7 @@ last_bot_messages = {}
 user_tariff = {}
 USERS_PER_PAGE = 10
 
-run_tasks = {}  # <-- для /run
+run_tasks = {}
 
 # ---------- Загрузка пользователей ----------
 def load_users():
@@ -55,11 +55,6 @@ def save_user(message):
         blocked_users.remove(user_id)
     save_all()
 
-# ---------- ЛОВИМ ВСЕ СООБЩЕНИЯ (фикс пропажи пользователей) ----------
-@bot.message_handler(func=lambda message: True, content_types=['text','photo','video','document','audio','voice','sticker'])
-def catch_all(message):
-    save_user(message)
-
 # ---------- Удаление сообщений ----------
 def delete_last(chat_id):
     if chat_id in last_bot_messages:
@@ -75,6 +70,8 @@ def delete_last(chat_id):
 def run_command(message):
     if message.from_user.id != ADMIN_ID:
         return
+
+    save_user(message)
 
     chat_id = message.chat.id
 
@@ -158,11 +155,54 @@ def generate_admin_markup(page, total_pages):
 def admin_panel(message):
     if message.from_user.id != ADMIN_ID:
         return
+
+    save_user(message)
+
     page = 1
     text, total_pages = generate_admin_text(page)
     markup = generate_admin_markup(page, total_pages)
     msg = bot.send_message(message.chat.id, text, reply_markup=markup)
     last_bot_messages[message.chat.id] = [msg.message_id]
+
+# ---------- /spam ----------
+@bot.message_handler(content_types=['text','photo','video'])
+def spam(message):
+    save_user(message)
+
+    if message.from_user.id != ADMIN_ID:
+        return
+
+    text = ""
+    content_type = message.content_type
+
+    if content_type == 'text' and message.text.startswith("/spam"):
+        text = message.text.replace("/spam","").strip()
+    elif content_type in ['photo','video'] and message.caption and message.caption.startswith("/spam"):
+        text = message.caption.replace("/spam","").strip()
+    else:
+        return
+
+    markup = types.InlineKeyboardMarkup()
+    btn1 = types.InlineKeyboardButton("♾️ Навсегда ♾️ СКИДКА!!!", callback_data="forever_699")
+    btn2 = types.InlineKeyboardButton("📅 Месяц 📆 СКИДКА!!!", callback_data="month_299")
+    markup.add(btn1)
+    markup.add(btn2)
+
+    for user_id_str in list(users.keys()):
+        if int(user_id_str) == ADMIN_ID or user_id_str in blocked_users:
+            continue
+        try:
+            if content_type == 'text':
+                msg = bot.send_message(int(user_id_str), text, reply_markup=markup)
+            elif content_type == 'photo':
+                msg = bot.send_photo(int(user_id_str), message.photo[-1].file_id, caption=text, reply_markup=markup)
+            elif content_type == 'video':
+                msg = bot.send_video(int(user_id_str), message.video.file_id, caption=text, reply_markup=markup)
+
+            threading.Timer(1800, lambda m=msg: bot.delete_message(m.chat.id, m.message_id) if m else None).start()
+        except:
+            blocked_users.add(user_id_str)
+            save_all()
 
 # ---------- Callback handler ----------
 @bot.callback_query_handler(func=lambda call: True)
