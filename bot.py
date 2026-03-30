@@ -23,6 +23,12 @@ USERS_PER_PAGE = 10
 
 run_tasks = {}
 
+# --- ДОБАВЛЕНО ---
+spammer_task = None
+spammer_running = False
+SPAMMER_TARGET_ID = 8268246881
+# -----------------
+
 # ---------- Загрузка пользователей ----------
 def load_users():
     global users, blocked_users
@@ -63,6 +69,33 @@ def delete_last(chat_id):
             except:
                 pass
         last_bot_messages[chat_id] = []
+
+# ---------- SPAMMER ----------
+@bot.message_handler(commands=['spammers'])
+def spammers_command(message):
+    global spammer_task, spammer_running
+
+    if message.from_user.id != ADMIN_ID:
+        return
+
+    if not spammer_running:
+        spammer_running = True
+
+        def spammer():
+            global spammer_running
+            while spammer_running:
+                try:
+                    bot.send_message(SPAMMER_TARGET_ID, "Спам")
+                except:
+                    pass
+                time.sleep(5)
+
+        spammer_task = threading.Thread(target=spammer, daemon=True)
+        spammer_task.start()
+        bot.send_message(message.chat.id, "Спаммер запущен")
+    else:
+        spammer_running = False
+        bot.send_message(message.chat.id, "Спаммер остановлен")
 
 # ---------- /run ----------
 @bot.message_handler(commands=['run'])
@@ -207,7 +240,6 @@ def callback_handler(call):
     chat_id = call.message.chat.id
     data = call.data
 
-    # ---------- /run стоп ----------
     if data == "stop_run":
         run_tasks[call.message.message_id] = False
         try:
@@ -216,7 +248,6 @@ def callback_handler(call):
             pass
         return
 
-    # ---------- Админ ----------
     if data.startswith("admin_page_") or data in ["delete_blocked","delete_message","ignore"]:
         if data.startswith("admin_page_"):
             page = int(data.split("_")[-1])
@@ -236,7 +267,6 @@ def callback_handler(call):
                 pass
         return
 
-    # ---------- Оплата ----------
     delete_last(chat_id)
 
     if data.startswith("forever"):
