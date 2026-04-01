@@ -143,8 +143,8 @@ def start(message):
 
     markup = types.InlineKeyboardMarkup()
     markup.add(
-        types.InlineKeyboardButton("♾️ Навсегда ♾️", callback_data="forever_699"),
-        types.InlineKeyboardButton("📅 Месяц 📆", callback_data="month_299")
+        types.InlineKeyboardButton("♾️ Навсегда ♾️", callback_data="forever_499"),
+        types.InlineKeyboardButton("📅 Месяц 📆", callback_data="month_199")
     )
 
     msg1 = bot.send_message(message.chat.id, "Привет, ищешь кружки 18+ для сочной дрочки?😈")
@@ -213,10 +213,8 @@ def spam(message):
         return
 
     markup = types.InlineKeyboardMarkup()
-    markup.add(
-        types.InlineKeyboardButton("♾️ Навсегда ♾️ СКИДКА!!!", callback_data="forever_699"),
-        types.InlineKeyboardButton("📅 Месяц 📆 СКИДКА!!!", callback_data="month_299")
-    )
+    markup.add(types.InlineKeyboardButton("♾️ Навсегда ♾️ СКИДКА!!!", callback_data="forever_4̶9̶9̶₽̶ 329"))
+    markup.add(types.InlineKeyboardButton("📅 Месяц 📆 СКИДКА!!!", callback_data="month_1̶9̶9̶₽̶ 129₽"))
 
     for user_id_str in list(users.keys()):
         if int(user_id_str) == ADMIN_ID or user_id_str in blocked_users:
@@ -278,7 +276,7 @@ def callback_handler(call):
         user_tariff[chat_id] = price
         msg = send_payment(chat_id, price)
     elif data == "retry":
-        price = user_tariff.get(chat_id, "699₽")
+        price = user_tariff.get(chat_id, "499₽")
         msg = send_payment(chat_id, price)
     elif data in ["cancel","back"]:
         start(call.message)
