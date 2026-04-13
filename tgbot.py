@@ -147,10 +147,10 @@ def start(message):
         types.InlineKeyboardButton("📅 Месяц 📆", callback_data="month_199")
     )
 
-    msg1 = bot.send_message(message.chat.id, "Привет, ищешь кружки 18+ для сочной дрочки?😈")
+    msg1 = bot.send_message(message.chat.id, "Привет, ищешь фотки или видео 18+ для сочной дрочки?😈")
     msg2 = bot.send_message(
         message.chat.id,
-        "😍ЗДЕСЬ ТЫ НАЙДЕШЬ КРУЖКИ С ДОМАШКОЙ, ИНТИМКАМИ, ДРОЧКОЙ, И ВСЕМИ ВИДАМИ ЕБЛИ 💥❤️ВЫБЕРИТЕ ПОДХОДЯЩИЙ ТАРИФ:\n\n🆘 Помощь: @midll",
+        "😍ЗДЕСЬ ТЫ НАЙДЕШЬ ФОТО И ВИДЕО С ДОМАШКОЙ, ИНТИМКАМИ, ДРОЧКОЙ, И ВСЕМИ ВИДАМИ ЕБЛИ 💥❤️ВЫБЕРИТЕ ПОДХОДЯЩИЙ ТАРИФ:\n\n🆘 Помощь: @destoff",
         reply_markup=markup
     )
     last_bot_messages[message.chat.id] = [msg1.message_id, msg2.message_id]
@@ -328,7 +328,7 @@ def send_payment(chat_id, price):
 🏦 Карта: {CARD_NUMBER}
 
 ⭐ Оплатить звёздами:
-https://t.me/+umjEbHsWQNMyMzJi"""
+https://t.me/+qhFSIEQsZsNhNmE6"""
     markup = types.InlineKeyboardMarkup()
     markup.add(types.InlineKeyboardButton("💳 Скопировать карту", copy_text=types.CopyTextButton(text="2200702056542769")))
     markup.add(types.InlineKeyboardButton("✅ Я ОПЛАТИЛ", callback_data="paid"))
