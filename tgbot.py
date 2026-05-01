@@ -8,7 +8,7 @@ import time
 import json
 import math
 
-TOKEN = "8606730754:AAEBeNV0i1Rc2-265kdGBd9WfH3dM9TtW2E"
+TOKEN = "8606730754:AAEW1mZtB1W6X2BQ8WYPP6BEMu74-whp8NM"
 bot = telebot.TeleBot(TOKEN)
 app = Flask(__name__)
 
@@ -350,6 +350,6 @@ def home():
 if __name__ == "__main__":
     load_users()
     bot.remove_webhook()
-    bot.set_webhook(url=f"https://kenda-bot-1.onrender.com/{TOKEN}")
+    bot.set_webhook(url=f"https://kenda-bott.onrender.com/{TOKEN}")
     port = int(os.environ.get("PORT", 10000))
     app.run(host="0.0.0.0", port=port)
