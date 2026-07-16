@@ -4,7 +4,7 @@ import telebot
 from telebot import types
 from flask import Flask, request
 
-TOKEN="YOUR_BOT_TOKEN"
+8887413578:AAFXozOLiKdfO6UyoLjRltB4w_EL-OXiqLE"
 bot=telebot.TeleBot(TOKEN)
 app=Flask(__name__)
 last={}
@@ -74,5 +74,5 @@ def wh():
 def h(): return "Bot is running",200
 if __name__=="__main__":
     bot.remove_webhook()
-    bot.set_webhook(url=f"https://YOUR-DOMAIN/{TOKEN}")
+    bot.set_webhook(url=f"https://kenda-bot-elsz.onrender.com{TOKEN}")
     app.run(host="0.0.0.0",port=int(os.environ.get("PORT",10000)))
