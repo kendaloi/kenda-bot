@@ -29,7 +29,7 @@ def homekb():
 @bot.message_handler(commands=["start"])
 def start(m):
     cleanup(m.chat.id)
-    send(m.chat.id,"Привет 👋\n\nДобро пожаловать!",homekb())
+    send(m.chat.id,"Привет 👋\n\nЕсли ты хочешь зарабатывать от $100 в день то можешь купить доступ к моему чату учеников.",homekb())
 
 @bot.callback_query_handler(func=lambda c:True)
 def cb(c):
@@ -40,7 +40,7 @@ def cb(c):
         kb.row(types.InlineKeyboardButton("Назад ◀️",callback_data="home"))
         send(cid,"Канал где я помогу тебе начать зарабатывать меньше чем через неделю. ⏳\nТам ты сможешь узнать все подробности о том как завести свой канал и как на этом заработать. 💸\nЕсли у тебя не получится, то я всегда рад помочь тебе. 🫡\nА так же у нас есть чат где ты можешь кому то дать свой совет или же тебе дадут его. 🎬\n\nБуду рад видеть тебя!",kb)
     elif c.data=="home":
-        send(cid,"Привет 👋\n\nДобро пожаловать!",homekb())
+        send(cid,"Привет 👋\n\nЕсли ты хочешь зарабатывать от $100 в день то можешь купить доступ к моему чату учеников.",homekb())
     elif c.data=="pay":
         m=send(cid,"⏳ Создаем оплату.")
         for i in range(17):
@@ -64,7 +64,7 @@ def cb(c):
         kb=types.InlineKeyboardMarkup()
         kb.row(types.InlineKeyboardButton("Назад ◀️",callback_data="home"))
         kb.row(types.InlineKeyboardButton("Заново 🔄",callback_data="pay"))
-        send(cid,"Все спасибо",kb)
+        send(cid,"Извините, платеж не прошел или пришла не вся сумма за выбранную услугу. Повторите еще раз.",kb)
 
 @app.route(f"/{TOKEN}",methods=["POST"])
 def wh():
