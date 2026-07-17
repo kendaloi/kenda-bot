@@ -1,13 +1,14 @@
 # -*- coding: utf-8 -*-
-import os,time,threading
+import os,time
 import telebot
 from telebot import types
 from flask import Flask, request
 
-TOKEN = "8887413578:AAFXozOLiKdfO6UyoLjRltB4w_EL-OXiqLE"
+TOKEN="8887413578:AAFXozOLiKdfO6UyoLjRltB4w_EL-OXiqLE"
 bot=telebot.TeleBot(TOKEN)
 app=Flask(__name__)
 last={}
+users={}
 
 def cleanup(cid):
     for mid in last.get(cid,[]):
@@ -28,16 +29,28 @@ def homekb():
 
 @bot.message_handler(commands=["start"])
 def start(m):
+    if m.from_user.username:
+        users[m.from_user.username.lower()]=m.chat.id
     cleanup(m.chat.id)
     send(m.chat.id,"Привет 👋\n\nЕсли ты хочешь зарабатывать от $100 в день то можешь купить доступ к моему чату учеников.",homekb())
+
+@bot.message_handler(commands=["text"])
+def textcmd(m):
+    a=m.text.split()
+    if len(a)!=2:
+        bot.reply_to(m,"Использование: /text @username");return
+    u=a[1].replace("@","").lower()
+    if u not in users:
+        bot.reply_to(m,"Пользователь не запускал бота.");return
+    bot.send_message(users[u],"https://t.me/+9pQ99j4mfzozOTNi")
+    bot.reply_to(m,"✅ Отправлено.")
 
 @bot.callback_query_handler(func=lambda c:True)
 def cb(c):
     cid=c.message.chat.id
     cleanup(cid)
     if c.data=="about":
-        kb=types.InlineKeyboardMarkup()
-        kb.row(types.InlineKeyboardButton("Назад ◀️",callback_data="home"))
+        kb=types.InlineKeyboardMarkup();kb.row(types.InlineKeyboardButton("Назад ◀️",callback_data="home"))
         send(cid,"Канал где я помогу тебе начать зарабатывать меньше чем через неделю. ⏳\nТам ты сможешь узнать все подробности о том как завести свой канал и как на этом заработать. 💸\nЕсли у тебя не получится, то я всегда рад помочь тебе. 🫡\nА так же у нас есть чат где ты можешь кому то дать свой совет или же тебе дадут его. 🎬\n\nБуду рад видеть тебя!",kb)
     elif c.data=="home":
         send(cid,"Привет 👋\n\nЕсли ты хочешь зарабатывать от $100 в день то можешь купить доступ к моему чату учеников.",homekb())
@@ -47,8 +60,7 @@ def cb(c):
             try: bot.edit_message_text("⏳ Создаем оплату"+"."*((i%3)+1),cid,m.message_id)
             except: pass
             time.sleep(0.3)
-        cleanup(cid)
-        time.sleep(3)
+        cleanup(cid);time.sleep(3)
         kb=types.InlineKeyboardMarkup()
         kb.row(types.InlineKeyboardButton("Скопировать карту 💳",callback_data="card"))
         kb.row(types.InlineKeyboardButton("Отменить ✖️",callback_data="home"))
@@ -58,18 +70,13 @@ def cb(c):
         bot.answer_callback_query(c.id,"Telegram не позволяет автоматически копировать текст.")
         send(cid,"2200702056542769")
     elif c.data=="paid":
-        m=send(cid,"⏳ Проверка платежа...")
-        time.sleep(5)
-        cleanup(cid)
         kb=types.InlineKeyboardMarkup()
         kb.row(types.InlineKeyboardButton("Назад ◀️",callback_data="home"))
-        kb.row(types.InlineKeyboardButton("Заново 🔄",callback_data="pay"))
-        send(cid,"Извините, платеж не прошел или пришла не вся сумма за выбранную услугу. Повторите еще раз.",kb)
+        send(cid,"Хорошо 👍\n\nЖдите, в течении дня мы вам отправим ссылку.\nНЕ БЛОКИРУЙТЕ БОТА ЕСЛИ НЕ ХОТИТЕ БЫТЬ ОБМАНУТЫМ ‼️",kb)
 
 @app.route(f"/{TOKEN}",methods=["POST"])
 def wh():
-    u=telebot.types.Update.de_json(request.get_data().decode())
-    bot.process_new_updates([u]); return "OK",200
+    u=telebot.types.Update.de_json(request.get_data().decode());bot.process_new_updates([u]);return "OK",200
 @app.route("/")
 def h(): return "Bot is running",200
 if __name__=="__main__":
